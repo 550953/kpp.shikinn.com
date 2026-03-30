@@ -17,6 +17,43 @@ const routes = {
 
 let currentPage = 'dashboard';
 
+// Функция показа уведомлений
+function showToast(message, type = 'info') {
+    // Удаляем старый тост, если есть
+    const oldToast = document.querySelector('.toast-message');
+    if (oldToast) oldToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-message';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed; bottom: 20px; right: 20px;
+        background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
+        color: ${type === 'error' ? 'white' : '#000'};
+        padding: 12px 24px; border-radius: 10px;
+        font-weight: 600; z-index: 10000;
+        animation: fadeInOut 2s ease-in-out;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Добавляем стиль для анимации, если его нет
+if (!document.querySelector('#toast-style')) {
+    const style = document.createElement('style');
+    style.id = 'toast-style';
+    style.textContent = `
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(20px); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Загрузка контента страницы
 async function loadPage(page) {
     const route = routes[page];
@@ -108,4 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('refreshBtn')?.addEventListener('click', () => {
         loadPage(currentPage);
     });
+    
+    // Приветственное уведомление
+    setTimeout(() => {
+        showToast('✅ Система готова: бесплатный период 15 мин, сутки 200 ₽, повторный въезд бесплатно', 'info');
+    }, 1500);
 });
