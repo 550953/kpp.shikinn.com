@@ -1,136 +1,126 @@
-<div class="filter-bar">
-    <input type="text" class="filter-input" id="whitelistSearch" placeholder="Поиск по номеру" style="width: 300px;">
-    <input type="text" class="filter-input" id="newWhitePlateInput" placeholder="Номер автомобиля (например: А123АА27)" style="width: 250px;">
-    <select class="filter-select" id="whitelistTypeSelect">
-        <option value="permanent">Постоянный</option>
-        <option value="temporary">Временный</option>
-    </select>
-    <button class="btn" id="addToWhitelistBtn">+ Добавить в белый список</button>
+<div class="filter-bar" style="justify-content:space-between;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <input type="text" class="filter-input" id="wlSearch" placeholder="Поиск по номеру или имени...">
+        <button class="btn" id="wlSearchBtn">🔍 Поиск</button>
+    </div>
+    <button class="btn" id="wlAddBtn">+ Добавить номер</button>
+</div>
+
+<!-- Форма добавления -->
+<div id="wlAddForm" style="display:none; background:#12151c; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:24px; margin-bottom:24px;">
+    <h3 style="margin-bottom:16px; font-size:15px;">Добавить в белый список</h3>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Гос. номер</div>
+            <input type="text" class="filter-input" id="wlPlateInput" placeholder="Напр. A001AA27" style="text-transform:uppercase;">
+        </div>
+        <div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Владелец / Комментарий</div>
+            <input type="text" class="filter-input" id="wlOwnerInput" placeholder="Напр. Иванов И.И.">
+        </div>
+        <div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Тип</div>
+            <select class="filter-select" id="wlTypeInput">
+                <option>Абонемент</option>
+                <option>Сотрудник</option>
+                <option>Арендатор</option>
+                <option>VIP</option>
+            </select>
+        </div>
+        <div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Действует до</div>
+            <input type="date" class="filter-input" id="wlExpireInput">
+        </div>
+        <button class="btn" id="wlSaveBtn">Сохранить</button>
+        <button class="btn btn-secondary" id="wlCancelBtn">Отмена</button>
+    </div>
 </div>
 
 <div class="table-container">
-    表
-        <thead>汽<th>Номер</th><th>Тип</th><th>Дата добавления</th><th>Срок действия</th><th></th></thead>
-        <tbody id="whitelistTableBody"></tbody>
-    现
+    <table>
+        <thead>
+            <tr><th>#</th><th>Гос. номер</th><th>Владелец</th><th>Тип</th><th>Добавлен</th><th>Действует до</th><th>Статус</th><th></th></tr>
+        </thead>
+        <tbody id="wlTableBody"></tbody>
+    </table>
 </div>
 
 <script>
-    const STORAGE_KEY = 'parkflow_whitelist';
-    
-    let whitelist = [];
-    
-    function loadWhitelist() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            whitelist = JSON.parse(stored);
-        } else {
-            whitelist = [
-                { plate: 'A123AA27', type: 'permanent', date: '2026-01-01', expires: 'бессрочно' },
-                { plate: 'B456BB27', type: 'temporary', date: '2026-03-01', expires: '2026-04-01' }
-            ];
-            saveWhitelist();
-        }
-        renderWhitelist();
-    }
-    
-    function saveWhitelist() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(whitelist));
-        window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
-    }
-    
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.textContent = message;
-        toast.style.cssText = `
-            position: fixed; bottom: 20px; right: 20px;
-            background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
-            color: ${type === 'error' ? 'white' : '#000'};
-            padding: 12px 24px; border-radius: 10px;
-            font-weight: 600; z-index: 10000;
-            animation: fadeInOut 2s ease-in-out;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
-    }
-    
-    function validatePlate(plate) {
-        const regex = /^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}\d{2,3}$/i;
-        return regex.test(plate.toUpperCase());
-    }
-    
-    function addToWhitelist() {
-        const input = document.getElementById('newWhitePlateInput');
-        let plate = input.value.trim().toUpperCase();
-        if (!plate) {
-            showToast('Введите номер автомобиля', 'error');
-            return;
-        }
-        if (!validatePlate(plate)) {
-            showToast('Неверный формат номера. Пример: А123АА27', 'error');
-            return;
-        }
-        if (whitelist.some(item => item.plate === plate)) {
-            showToast('Номер уже в белом списке', 'error');
-            return;
-        }
-        const type = document.getElementById('whitelistTypeSelect').value;
-        const expires = type === 'permanent' ? 'бессрочно' : (() => {
-            const d = new Date();
-            d.setMonth(d.getMonth() + 1);
-            return d.toISOString().slice(0,10);
-        })();
-        
-        whitelist.push({
-            plate: plate,
-            type: type,
-            date: new Date().toISOString().slice(0,10),
-            expires: expires
+let whitelist = [
+    {id:1, plate:'М878ВС27', owner:'Петров А.В.', type:'Абонемент', added:'01.03.2026', expires:'31.03.2026', active:true},
+    {id:2, plate:'Т496НО28', owner:'Сидорова Е.К.', type:'Сотрудник', added:'15.01.2026', expires:'31.12.2026', active:true},
+    {id:3, plate:'О558АТ27', owner:'ООО «Амур-Сервис»', type:'Арендатор', added:'01.02.2026', expires:'01.02.2027', active:true},
+    {id:4, plate:'К966СА27', owner:'Иванов И.И.', type:'VIP', added:'10.03.2026', expires:'10.03.2027', active:true},
+    {id:5, plate:'С164ЕЕ27', owner:'Морозов Д.С.', type:'Абонемент', added:'01.02.2026', expires:'28.02.2026', active:false},
+    {id:6, plate:'У12ТТО27', owner:'Козлова Н.Р.', type:'Абонемент', added:'01.03.2026', expires:'31.03.2026', active:true},
+    {id:7, plate:'Р823УК27', owner:'Федотов П.А.', type:'Сотрудник', added:'01.01.2026', expires:'31.12.2026', active:true},
+];
+let nextId = 8;
+
+function renderWhitelist(data) {
+    document.getElementById('wlTableBody').innerHTML = data.map((item,i)=>`
+        <tr>
+            <td style="color:#6b7280;">${i+1}</td>
+            <td><strong style="color:#10b981;">${item.plate}</strong></td>
+            <td>${item.owner}</td>
+            <td>${item.type}</td>
+            <td style="color:#9ca3af;">${item.added}</td>
+            <td style="color:#9ca3af;">${item.expires}</td>
+            <td>
+                <span class="status-badge ${item.active?'status-parking':'status-exit'}">
+                    ${item.active?'✅ Активен':'⏱ Истёк'}
+                </span>
+            </td>
+            <td>
+                <button class="btn-icon wlDeleteBtn" data-id="${item.id}" title="Удалить из списка">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+    document.querySelectorAll('.wlDeleteBtn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+            if (confirm('Удалить номер из белого списка?')) {
+                whitelist = whitelist.filter(w=>w.id!==+btn.dataset.id);
+                renderWhitelist(whitelist);
+            }
         });
-        saveWhitelist();
-        renderWhitelist();
-        input.value = '';
-        showToast(`Номер ${plate} добавлен в белый список`);
-    }
-    
-    function removeFromWhitelist(index) {
-        const plate = whitelist[index].plate;
-        if (confirm(`Удалить ${plate} из белого списка?`)) {
-            whitelist.splice(index, 1);
-            saveWhitelist();
-            renderWhitelist();
-            showToast(`Номер ${plate} удален из белого списка`);
-        }
-    }
-    
-    function renderWhitelist() {
-        const searchTerm = document.getElementById('whitelistSearch')?.value.toLowerCase() || '';
-        const filtered = whitelist.filter(item => item.plate.toLowerCase().includes(searchTerm));
-        
-        const tbody = document.getElementById('whitelistTableBody');
-        if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Список пуст</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = filtered.map((item, idx) => `
-            <tr>
-                <td><strong>${escapeHtml(item.plate)}</strong></td>
-                <td><span style="color:${item.type === 'permanent' ? '#10b981' : '#00e5ff'}">${item.type === 'permanent' ? 'Постоянный' : 'Временный'}</span></td>
-                <td>${item.date}</td>
-                <td>${escapeHtml(item.expires)}</td>
-                <td><button class="btn-icon" onclick="removeFromWhitelist(${whitelist.indexOf(item)})" title="Удалить">🗑️</button></td>
-            </tr>
-        `).join('');
-    }
-    
-    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    
-    document.getElementById('addToWhitelistBtn')?.addEventListener('click', addToWhitelist);
-    document.getElementById('whitelistSearch')?.addEventListener('input', renderWhitelist);
-    
-    loadWhitelist();
-    
-    window.removeFromWhitelist = removeFromWhitelist;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderWhitelist(whitelist);
+
+    document.getElementById('wlAddBtn').addEventListener('click', ()=>{
+        document.getElementById('wlAddForm').style.display='block';
+        document.getElementById('wlPlateInput').focus();
+    });
+    document.getElementById('wlCancelBtn').addEventListener('click', ()=>{
+        document.getElementById('wlAddForm').style.display='none';
+    });
+    document.getElementById('wlSaveBtn').addEventListener('click', ()=>{
+        const plate = document.getElementById('wlPlateInput').value.trim().toUpperCase();
+        if (!plate) { alert('Введите номер автомобиля'); return; }
+        const expires = document.getElementById('wlExpireInput').value;
+        whitelist.unshift({
+            id: nextId++,
+            plate,
+            owner: document.getElementById('wlOwnerInput').value.trim() || '—',
+            type: document.getElementById('wlTypeInput').value,
+            added: new Date().toLocaleDateString('ru-RU'),
+            expires: expires ? new Date(expires).toLocaleDateString('ru-RU') : '—',
+            active: true,
+        });
+        renderWhitelist(whitelist);
+        document.getElementById('wlAddForm').style.display='none';
+        document.getElementById('wlPlateInput').value='';
+        document.getElementById('wlOwnerInput').value='';
+        document.getElementById('wlExpireInput').value='';
+    });
+    document.getElementById('wlSearchBtn').addEventListener('click', ()=>{
+        const q = document.getElementById('wlSearch').value.trim().toUpperCase();
+        renderWhitelist(q ? whitelist.filter(w=>w.plate.includes(q)||w.owner.toUpperCase().includes(q)) : whitelist);
+    });
+    document.getElementById('wlSearch').addEventListener('keyup', e=>{
+        if (e.key==='Enter') document.getElementById('wlSearchBtn').click();
+    });
+});
 </script>

@@ -1,142 +1,114 @@
-<div class="filter-bar">
-    <input type="text" class="filter-input" id="paymentSearch" placeholder="Поиск по номеру" style="width: 300px;">
-    <input type="date" class="filter-input" id="paymentDateFrom">
-    <input type="date" class="filter-input" id="paymentDateTo">
-    <select class="filter-select" id="paymentMethodFilter">
-        <option value="all">Все способы</option>
-        <option value="Терминал">Терминал</option>
-        <option value="Онлайн">Онлайн</option>
-        <option value="Льготный">Льготный</option>
-    </select>
-    <button class="btn" id="addTestPaymentBtn">+ Тестовый платеж</button>
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-card-title">Выручка сегодня</div>
+        <div class="stat-card-value">3 750 ₽</div>
+        <div class="stat-card-change">↑ +15% к вчера</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Платежей сегодня</div>
+        <div class="stat-card-value">47</div>
+        <div class="stat-card-change">успешных: 46 / отказ: 1</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Оплата картой</div>
+        <div class="stat-card-value">68%</div>
+        <div class="stat-card-change" style="color:#6b7280;">наличными: 32%</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Средний чек</div>
+        <div class="stat-card-value">79 ₽</div>
+        <div class="stat-card-change" style="color:#6b7280;">за сегодня</div>
+    </div>
+</div>
+
+<div class="filter-bar" style="justify-content:space-between;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <input type="text" class="filter-input" id="paySearch" placeholder="Поиск по номеру авто...">
+        <input type="date" class="filter-input" id="payDateFrom" value="2026-03-30">
+        <input type="date" class="filter-input" id="payDateTo" value="2026-03-30">
+        <select class="filter-select" id="payMethodFilter">
+            <option value="all">Все способы</option>
+            <option value="card">Карта</option>
+            <option value="cash">Наличные</option>
+        </select>
+        <select class="filter-select" id="payStatusFilter">
+            <option value="all">Все статусы</option>
+            <option value="success">Успешно</option>
+            <option value="failed">Отказ</option>
+        </select>
+        <button class="btn" id="paySearchBtn">🔍 Поиск</button>
+    </div>
+    <button class="btn btn-secondary" id="payExportBtn">📎 Экспорт</button>
 </div>
 
 <div class="table-container">
-    表
-        <thead>汽<th>Дата</th><th>Номер</th><th>Сумма</th><th>Способ</th><th>Статус</th><th></th></thead>
-        <tbody id="paymentsTableBody"></tbody>
-    现
+    <table>
+        <thead>
+            <tr><th>Дата и время</th><th>Гос. номер</th><th>Тариф</th><th>Время на стоянке</th><th>Сумма</th><th>Способ оплаты</th><th>Статус</th></tr>
+        </thead>
+        <tbody id="payTableBody"></tbody>
+    </table>
 </div>
 
 <script>
-    const STORAGE_KEY = 'parkflow_payments';
-    
-    let payments = [];
-    
-    function loadPayments() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            payments = JSON.parse(stored);
-        } else {
-            payments = [
-                { date: '2026-03-25T10:43:00', plate: 'K966CA27', amount: 50, method: 'Терминал', status: 'completed' },
-                { date: '2026-03-25T10:26:00', plate: 'CI64EE27', amount: 50, method: 'Терминал', status: 'completed' },
-                { date: '2026-03-25T09:44:00', plate: 'C088CP125', amount: 0, method: 'Льготный', status: 'completed' },
-                { date: '2026-03-24T18:30:00', plate: 'M878BC27', amount: 200, method: 'Онлайн', status: 'completed' },
-                { date: '2026-03-24T12:15:00', plate: 'T496HO28', amount: 120, method: 'Терминал', status: 'completed' }
-            ];
-            savePayments();
-        }
-        renderPayments();
-    }
-    
-    function savePayments() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payments));
-        window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
-    }
-    
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.textContent = message;
-        toast.style.cssText = `
-            position: fixed; bottom: 20px; right: 20px;
-            background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
-            color: ${type === 'error' ? 'white' : '#000'};
-            padding: 12px 24px; border-radius: 10px;
-            font-weight: 600; z-index: 10000;
-            animation: fadeInOut 2s ease-in-out;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
-    }
-    
-    function addTestPayment() {
-        const plates = ['A123AA27', 'B456BB27', 'K966CA27', 'M878BC27', 'X777XX77'];
-        const methods = ['Терминал', 'Онлайн'];
-        const randomPlate = plates[Math.floor(Math.random() * plates.length)];
-        const randomMethod = methods[Math.floor(Math.random() * methods.length)];
-        const randomAmount = Math.floor(Math.random() * 300) + 50;
-        
-        payments.unshift({
-            date: new Date().toISOString(),
-            plate: randomPlate,
-            amount: randomAmount,
-            method: randomMethod,
-            status: 'completed'
-        });
-        savePayments();
-        renderPayments();
-        showToast(`Добавлен тестовый платеж: ${randomPlate} — ${randomAmount}₽`);
-    }
-    
-    function deletePayment(index) {
-        if (confirm(`Удалить платеж для ${payments[index].plate}?`)) {
-            payments.splice(index, 1);
-            savePayments();
-            renderPayments();
-            showToast(`Платеж удален`);
-        }
-    }
-    
-    function renderPayments() {
-        const searchTerm = document.getElementById('paymentSearch')?.value.toLowerCase() || '';
-        const dateFrom = document.getElementById('paymentDateFrom')?.value;
-        const dateTo = document.getElementById('paymentDateTo')?.value;
-        const methodFilter = document.getElementById('paymentMethodFilter')?.value || 'all';
-        
-        let filtered = [...payments];
-        
-        if (searchTerm) {
-            filtered = filtered.filter(p => p.plate.toLowerCase().includes(searchTerm));
-        }
-        if (methodFilter !== 'all') {
-            filtered = filtered.filter(p => p.method === methodFilter);
-        }
-        if (dateFrom) {
-            filtered = filtered.filter(p => p.date.slice(0,10) >= dateFrom);
-        }
-        if (dateTo) {
-            filtered = filtered.filter(p => p.date.slice(0,10) <= dateTo);
-        }
-        
-        const tbody = document.getElementById('paymentsTableBody');
-        if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Нет платежей</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = filtered.map((p, idx) => `
-            <tr>
-                <td style="white-space: nowrap;">${new Date(p.date).toLocaleString('ru-RU')}</td>
-                <td><strong>${escapeHtml(p.plate)}</strong></td>
-                <td><strong>${p.amount} ₽</strong></td>
-                <td>${escapeHtml(p.method)}</td>
-                <td><span class="status-badge" style="background:rgba(16,185,129,0.2); color:#10b981;">✅ ${p.status === 'completed' ? 'Оплачено' : 'В обработке'}</span></td>
-                <td><button class="btn-icon" onclick="deletePayment(${payments.indexOf(p)})" title="Удалить">🗑️</button></td>
-            </tr>
-        `).join('');
-    }
-    
-    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    
-    document.getElementById('addTestPaymentBtn')?.addEventListener('click', addTestPayment);
-    document.getElementById('paymentSearch')?.addEventListener('input', renderPayments);
-    document.getElementById('paymentDateFrom')?.addEventListener('change', renderPayments);
-    document.getElementById('paymentDateTo')?.addEventListener('change', renderPayments);
-    document.getElementById('paymentMethodFilter')?.addEventListener('change', renderPayments);
-    
-    loadPayments();
-    
-    window.deletePayment = deletePayment;
+const payments = [
+    {dt:'30.03.2026 10:38', plate:'K966CA27', tariff:'Базовый', duration:'1ч 02м', amount:100, method:'card', status:'success'},
+    {dt:'30.03.2026 10:22', plate:'M007XE27', tariff:'Базовый', duration:'48м', amount:50, method:'cash', status:'success'},
+    {dt:'30.03.2026 10:07', plate:'C088CP125', tariff:'Базовый', duration:'12м', amount:50, method:'card', status:'success'},
+    {dt:'30.03.2026 09:51', plate:'P823YK27', tariff:'Базовый', duration:'56м', amount:100, method:'card', status:'success'},
+    {dt:'30.03.2026 09:44', plate:'T496HO28', tariff:'Базовый', duration:'1ч 34м', amount:150, method:'cash', status:'success'},
+    {dt:'30.03.2026 09:30', plate:'Y12TTO27', tariff:'Суточный', duration:'34м', amount:500, method:'card', status:'success'},
+    {dt:'30.03.2026 09:18', plate:'O558AT27', tariff:'Базовый', duration:'24м', amount:50, method:'card', status:'failed'},
+    {dt:'30.03.2026 09:05', plate:'M878BC27', tariff:'Базовый', duration:'2ч 11м', amount:200, method:'cash', status:'success'},
+    {dt:'29.03.2026 19:44', plate:'K966CA27', tariff:'Базовый', duration:'55м', amount:100, method:'card', status:'success'},
+    {dt:'29.03.2026 18:22', plate:'Р823УК27', tariff:'Ночной', duration:'—', amount:200, method:'card', status:'success'},
+    {dt:'29.03.2026 17:58', plate:'А721РС27', tariff:'Базовый', duration:'1ч 20м', amount:150, method:'cash', status:'success'},
+    {dt:'29.03.2026 17:12', plate:'В300ВО27', tariff:'Базовый', duration:'38м', amount:50, method:'card', status:'success'},
+    {dt:'29.03.2026 16:44', plate:'Х678МА27', tariff:'Суточный', duration:'—', amount:500, method:'card', status:'success'},
+    {dt:'29.03.2026 15:33', plate:'Н445ОМ27', tariff:'Базовый', duration:'1ч 08м', amount:100, method:'cash', status:'success'},
+    {dt:'29.03.2026 14:21', plate:'Е119КХ27', tariff:'Базовый', duration:'45м', amount:50, method:'card', status:'success'},
+    {dt:'29.03.2026 13:07', plate:'M878BC27', tariff:'Базовый', duration:'2ч 03м', amount:200, method:'card', status:'success'},
+    {dt:'29.03.2026 12:40', plate:'T496HO28', tariff:'Базовый', duration:'1ч 12м', amount:100, method:'cash', status:'success'},
+    {dt:'29.03.2026 11:18', plate:'C088CP125', tariff:'Базовый', duration:'22м', amount:50, method:'card', status:'success'},
+    {dt:'29.03.2026 10:55', plate:'O558AT27', tariff:'Базовый', duration:'1ч 40м', amount:150, method:'card', status:'success'},
+    {dt:'29.03.2026 09:30', plate:'CI64EE27', tariff:'Базовый', duration:'58м', amount:100, method:'cash', status:'success'},
+];
+
+function renderPayments(data) {
+    document.getElementById('payTableBody').innerHTML = data.map(p=>`
+        <tr>
+            <td style="color:#9ca3af; font-family:monospace;">${p.dt}</td>
+            <td><strong>${p.plate}</strong></td>
+            <td>${p.tariff}</td>
+            <td style="color:#9ca3af;">${p.duration}</td>
+            <td><strong style="color:${p.status==='success'?'#e8eaf0':'#ef4444'};">${p.amount} ₽</strong></td>
+            <td>${p.method==='card'?'💳 Карта':'💵 Наличные'}</td>
+            <td>
+                <span class="status-badge ${p.status==='success'?'status-parking':'status-exit'}">
+                    ${p.status==='success'?'✅ Успешно':'❌ Отказ'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterPayments() {
+    const q = document.getElementById('paySearch').value.trim().toUpperCase();
+    const method = document.getElementById('payMethodFilter').value;
+    const status = document.getElementById('payStatusFilter').value;
+    let data = [...payments];
+    if (q) data = data.filter(p=>p.plate.toUpperCase().includes(q));
+    if (method!=='all') data = data.filter(p=>p.method===method);
+    if (status!=='all') data = data.filter(p=>p.status===status);
+    renderPayments(data);
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderPayments(payments);
+    document.getElementById('paySearchBtn').addEventListener('click', filterPayments);
+    document.getElementById('paySearch').addEventListener('keyup', e=>{ if(e.key==='Enter') filterPayments(); });
+    document.getElementById('payMethodFilter').addEventListener('change', filterPayments);
+    document.getElementById('payStatusFilter').addEventListener('change', filterPayments);
+    document.getElementById('payExportBtn').addEventListener('click', ()=>alert('Экспорт в Excel (будет реализован с API)'));
+});
 </script>

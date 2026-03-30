@@ -1,144 +1,109 @@
-<div class="filter-bar">
-    <input type="text" class="filter-input" id="cameraSearch" placeholder="Поиск по IP или названию" style="width: 300px;">
-    <button class="btn" id="addCameraBtn">+ Добавить камеру</button>
-    <button class="btn btn-secondary" id="refreshAllBtn">🔄 Проверить все</button>
+<div class="filter-bar" style="justify-content:space-between;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <select class="filter-select" id="camStatusFilter">
+            <option value="all">Все статусы</option>
+            <option value="online">Онлайн</option>
+            <option value="offline">Офлайн</option>
+        </select>
+        <select class="filter-select" id="camTypeFilter">
+            <option value="all">Все типы</option>
+            <option value="entry">Въезд</option>
+            <option value="exit">Выезд</option>
+            <option value="overview">Обзорная</option>
+        </select>
+    </div>
+    <button class="btn btn-secondary" id="refreshCamsBtn">🔄 Обновить</button>
 </div>
 
 <div class="table-container">
-    <table id="camerasTable">
+    <table>
         <thead>
-            <tr><th>Название</th><th>IP-адрес</th><th>RTSP-поток</th><th>Статус</th><th>Последнее событие</th><th></th></tr>
+            <tr>
+                <th>Камера</th>
+                <th>IP-адрес</th>
+                <th>Тип</th>
+                <th>Разрешение</th>
+                <th>Последний сигнал</th>
+                <th>Статус</th>
+                <th></th>
+            </tr>
         </thead>
-        <tbody id="camerasTableBody"></tbody>
+        <tbody id="camsTableBody"></tbody>
     </table>
 </div>
 
+<!-- Превью модалка -->
+<div id="previewModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:#12151c; border-radius:20px; padding:32px; width:560px; max-width:95vw;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 id="previewTitle">Превью камеры</h3>
+            <button class="btn-icon" id="closePreviewBtn" style="font-size:18px;">✕</button>
+        </div>
+        <div style="background:#0a0c10; border-radius:12px; height:280px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.07);">
+            <div style="text-align:center; color:#6b7280;">
+                <div style="font-size:48px; margin-bottom:12px;">📷</div>
+                <div id="previewStatus" style="font-size:14px;">Подключение к потоку...</div>
+            </div>
+        </div>
+        <div id="previewInfo" style="margin-top:16px; font-size:13px; color:#9ca3af; display:flex; gap:24px;"></div>
+    </div>
+</div>
+
 <script>
-    const STORAGE_KEY = 'parkflow_cameras';
-    
-    let cameras = [];
-    
-    function loadCameras() {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            cameras = JSON.parse(stored);
-        } else {
-            cameras = [
-                { name: 'Въезд', ip: '192.168.1.101', rtsp: 'rtsp://admin:***@192.168.1.101:554/cam', status: 'online', lastEvent: '25.03 10:38' },
-                { name: 'Выезд', ip: '192.168.1.102', rtsp: 'rtsp://admin:***@192.168.1.102:554/cam', status: 'online', lastEvent: '25.03 10:43' }
-            ];
-            saveCameras();
-        }
-        renderCameras();
-    }
-    
-    function saveCameras() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cameras));
-    }
-    
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.textContent = message;
-        toast.style.cssText = `
-            position: fixed; bottom: 20px; right: 20px;
-            background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
-            color: ${type === 'error' ? 'white' : '#000'};
-            padding: 12px 24px; border-radius: 10px;
-            font-weight: 600; z-index: 10000;
-            animation: fadeInOut 2s ease-in-out;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
-    }
-    
-    function toggleStatus(index) {
-        cameras[index].status = cameras[index].status === 'online' ? 'offline' : 'online';
-        saveCameras();
-        renderCameras();
-        showToast(`Камера ${cameras[index].name}: ${cameras[index].status === 'online' ? '🟢 Онлайн' : '🔴 Офлайн'}`);
-    }
-    
-    function testConnection(index) {
-        showToast(`Проверка связи с ${cameras[index].name}...`, 'info');
-        setTimeout(() => {
-            if (cameras[index].status === 'online') {
-                showToast(`✅ ${cameras[index].name} отвечает (${cameras[index].ip})`);
-            } else {
-                showToast(`❌ ${cameras[index].name} не отвечает`, 'error');
-            }
-        }, 500);
-    }
-    
-    function deleteCamera(index) {
-        if (confirm(`Удалить камеру ${cameras[index].name}?`)) {
-            cameras.splice(index, 1);
-            saveCameras();
-            renderCameras();
-            showToast(`Камера удалена`);
-        }
-    }
-    
-    function addCamera() {
-        const name = prompt('Название камеры (например: Въезд, Выезд, Задний двор):');
-        if (!name) return;
-        const ip = prompt('IP-адрес камеры:');
-        if (!ip) return;
-        const rtsp = prompt('RTSP-поток (опционально):', `rtsp://admin:pass@${ip}:554/cam`);
-        
-        cameras.push({
-            name: name,
-            ip: ip,
-            rtsp: rtsp || '-',
-            status: 'online',
-            lastEvent: '—'
+const cameras = [
+    {id:1, name:'Камера #1 — Въезд', ip:'192.168.1.101', type:'entry', typeLabel:'Въезд', res:'1920×1080', lastSeen:'30.03.2026 10:41', status:'online'},
+    {id:2, name:'Камера #2 — Выезд', ip:'192.168.1.102', type:'exit', typeLabel:'Выезд', res:'1920×1080', lastSeen:'30.03.2026 10:41', status:'online'},
+    {id:3, name:'Камера #3 — Обзорная (ряд A)', ip:'192.168.1.103', type:'overview', typeLabel:'Обзорная', res:'1280×720', lastSeen:'30.03.2026 10:40', status:'online'},
+    {id:4, name:'Камера #4 — Обзорная (ряд B)', ip:'192.168.1.104', type:'overview', typeLabel:'Обзорная', res:'1280×720', lastSeen:'30.03.2026 09:15', status:'offline'},
+    {id:5, name:'Камера #5 — Кассовая зона', ip:'192.168.1.105', type:'overview', typeLabel:'Обзорная', res:'1920×1080', lastSeen:'30.03.2026 10:41', status:'online'},
+    {id:6, name:'Камера #6 — Въезд (дублирующая)', ip:'192.168.1.106', type:'entry', typeLabel:'Въезд', res:'1920×1080', lastSeen:'29.03.2026 22:03', status:'offline'},
+];
+
+function renderCameras(data) {
+    document.getElementById('camsTableBody').innerHTML = data.map(c=>`
+        <tr>
+            <td><strong>${c.name}</strong></td>
+            <td style="font-family:monospace; color:#9ca3af;">${c.ip}</td>
+            <td>${c.typeLabel}</td>
+            <td style="color:#9ca3af;">${c.res}</td>
+            <td style="color:#9ca3af;">${c.lastSeen}</td>
+            <td>
+                <span class="status-badge ${c.status==='online'?'status-parking':'status-exit'}">
+                    ${c.status==='online'?'🟢 Онлайн':'🔴 Офлайн'}
+                </span>
+            </td>
+            <td>
+                <button class="btn-icon previewBtn" data-id="${c.id}" title="Открыть превью">📺</button>
+            </td>
+        </tr>
+    `).join('');
+    document.querySelectorAll('.previewBtn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+            const cam = cameras.find(c=>c.id===+btn.dataset.id);
+            document.getElementById('previewTitle').textContent = cam.name;
+            document.getElementById('previewStatus').textContent = cam.status==='online' ? 'Прямая трансляция (RTSP)' : 'Нет сигнала — камера офлайн';
+            document.getElementById('previewInfo').innerHTML = `<span>IP: ${cam.ip}</span><span>Разрешение: ${cam.res}</span><span>Последний сигнал: ${cam.lastSeen}</span>`;
+            document.getElementById('previewModal').style.display='flex';
         });
-        saveCameras();
-        renderCameras();
-        showToast(`Камера "${name}" добавлена`);
-    }
-    
-    function renderCameras() {
-        const searchTerm = document.getElementById('cameraSearch')?.value.toLowerCase() || '';
-        const filtered = cameras.filter(c => 
-            c.name.toLowerCase().includes(searchTerm) || 
-            c.ip.includes(searchTerm)
-        );
-        
-        const tbody = document.getElementById('camerasTableBody');
-        if (!filtered.length) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Нет камер</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = filtered.map((cam, idx) => `
-            <tr>
-                <td><strong>${escapeHtml(cam.name)}</strong></td>
-                <td>${escapeHtml(cam.ip)}</td>
-                <td><code style="font-size:12px;">${escapeHtml(cam.rtsp)}</code></td>
-                <td><span class="status-badge" style="background:${cam.status === 'online' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color:${cam.status === 'online' ? '#10b981' : '#ef4444'};">${cam.status === 'online' ? '🟢 Онлайн' : '🔴 Офлайн'}</span></td>
-                <td>${escapeHtml(cam.lastEvent)}</td>
-                <td style="white-space: nowrap;">
-                    <button class="btn-icon" onclick="toggleStatus(${cameras.indexOf(cam)})" title="Переключить статус">🔄</button>
-                    <button class="btn-icon" onclick="testConnection(${cameras.indexOf(cam)})" title="Проверить связь">📡</button>
-                    <button class="btn-icon" onclick="deleteCamera(${cameras.indexOf(cam)})" title="Удалить">🗑️</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-    
-    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-    
-    document.getElementById('addCameraBtn')?.addEventListener('click', addCamera);
-    document.getElementById('refreshAllBtn')?.addEventListener('click', () => {
-        showToast('Проверка связи со всеми камерами...');
-        setTimeout(() => showToast('Все камеры: 2 онлайн, 0 офлайн'), 800);
     });
-    document.getElementById('cameraSearch')?.addEventListener('input', () => renderCameras());
-    
-    loadCameras();
-    
-    window.toggleStatus = toggleStatus;
-    window.testConnection = testConnection;
-    window.deleteCamera = deleteCamera;
+}
+
+function filterCameras() {
+    const status = document.getElementById('camStatusFilter').value;
+    const type = document.getElementById('camTypeFilter').value;
+    let data = [...cameras];
+    if (status!=='all') data = data.filter(c=>c.status===status);
+    if (type!=='all') data = data.filter(c=>c.type===type);
+    renderCameras(data);
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderCameras(cameras);
+    document.getElementById('camStatusFilter').addEventListener('change', filterCameras);
+    document.getElementById('camTypeFilter').addEventListener('change', filterCameras);
+    document.getElementById('refreshCamsBtn').addEventListener('click', filterCameras);
+    document.getElementById('closePreviewBtn').addEventListener('click', ()=>{
+        document.getElementById('previewModal').style.display='none';
+    });
+});
 </script>
