@@ -1,0 +1,55 @@
+<div class="filter-bar">
+    <select class="filter-select" id="cameraSelect">
+        <option value="all">Все камеры</option>
+        <option value="entry">Въезд</option>
+        <option value="exit">Выезд</option>
+    </select>
+    <button class="btn btn-secondary" id="refreshMonitoringBtn">🔄 Обновить</button>
+</div>
+
+<div class="monitoring-grid" id="monitoringGrid">
+    <!-- Карточки мест будут здесь -->
+</div>
+
+<script>
+const mockSpots = [
+    { number: 'A01', plate: 'M878BC27', brand: 'Toyota Land', color: 'Белый', entryTime: '09:57', occupied: true },
+    { number: 'A02', plate: 'T496HO28', brand: 'Toyota Corolla', color: 'Серый', entryTime: '09:54', occupied: true },
+    { number: 'A03', plate: 'O558AT27', brand: 'Toyota Aura', color: 'Белый', entryTime: '09:29', occupied: true },
+    { number: 'A04', plate: '', brand: '', color: '', entryTime: '', occupied: false },
+    { number: 'A05', plate: '', brand: '', color: '', entryTime: '', occupied: false },
+    { number: 'B01', plate: 'Y12TTO27', brand: 'Toyota Harrier', color: 'Черный', entryTime: '08:56', occupied: true },
+    { number: 'B02', plate: '', brand: '', color: '', entryTime: '', occupied: false },
+    { number: 'B03', plate: 'P823YK27', brand: 'Volkswagen', color: 'Белый', entryTime: '08:55', occupied: true },
+];
+
+function renderMonitoring() {
+    const container = document.getElementById('monitoringGrid');
+    container.innerHTML = mockSpots.map(spot => `
+        <div class="parking-spot ${spot.occupied ? 'occupied' : ''}">
+            <div class="spot-number">Место ${spot.number}</div>
+            ${spot.occupied ? `
+                <div class="spot-car">
+                    <span>${spot.brand} ${spot.color}</span>
+                    <strong>${spot.plate}</strong>
+                </div>
+                <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+                    Заезд: ${spot.entryTime}
+                </div>
+            ` : `
+                <div class="spot-car">
+                    <span style="color: #6b7280;">Свободно</span>
+                </div>
+            `}
+        </div>
+    `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderMonitoring();
+    
+    document.getElementById('refreshMonitoringBtn')?.addEventListener('click', () => {
+        renderMonitoring();
+    });
+});
+</script>

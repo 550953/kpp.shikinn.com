@@ -1,0 +1,105 @@
+<div class="filter-bar">
+    <input type="text" class="filter-input" placeholder="Поиск по номеру" id="searchInput">
+    <input type="date" class="filter-input" id="dateFrom">
+    <input type="date" class="filter-input" id="dateTo">
+    <select class="filter-select" id="statusFilter">
+        <option value="all">Все</option>
+        <option value="parking">На парковке</option>
+        <option value="completed">Завершенные</option>
+    </select>
+    <button class="btn" id="searchBtn">🔍 Поиск</button>
+    <button class="btn btn-secondary" id="exportBtn">📎 Экспорт</button>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Дата въезда</th>
+                <th>Марка</th>
+                <th>Цвет</th>
+                <th>Номер</th>
+                <th>Дата выезда</th>
+                <th>Тариф</th>
+                <th>Стоимость</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="journalTableBody">
+            <!-- Данные будут загружены через API -->
+            <tr>
+                <td colspan="8" style="text-align: center;">Загрузка...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+// Заглушка данных (как на скринах Крестины)
+const mockJournalData = [
+    { entry: '25.03.2026 10:38', brand: 'Mitsubishi', color: 'Белый', plate: 'K966CA27', exit: '25.03.2026 10:43', tariff: 'Базовый', cost: '0.00', status: 'completed' },
+    { entry: '25.03.2026 10:18', brand: 'Toyota C-HR', color: 'Серый', plate: 'K746XH125', exit: '25.03.2026 10:24', tariff: 'Базовый', cost: '0.00', status: 'completed' },
+    { entry: '25.03.2026 10:16', brand: 'Nissan Note', color: 'Белый', plate: 'CI64EE27', exit: '25.03.2026 10:26', tariff: 'Базовый', cost: '0.00', status: 'completed' },
+    { entry: '25.03.2026 09:57', brand: 'Toyota Land', color: 'Белый', plate: 'M878BC27', exit: '', tariff: '', cost: '', status: 'parking' },
+    { entry: '25.03.2026 09:54', brand: 'Toyota Corolla', color: 'Серый', plate: 'T496HO28', exit: '', tariff: '', cost: '', status: 'parking' },
+    { entry: '25.03.2026 09:43', brand: 'Toyota Corolla', color: 'Черный', plate: 'M007XE27', exit: '25.03.2026 10:31', tariff: 'Базовый', cost: '0.00', status: 'completed' },
+    { entry: '25.03.2026 09:32', brand: 'Toyota Corolla', color: 'Белый', plate: 'C088CP125', exit: '25.03.2026 09:44', tariff: 'Базовый', cost: '0.00', status: 'completed' },
+    { entry: '25.03.2026 09:29', brand: 'Toyota Aura', color: 'Белый', plate: 'O558AT27', exit: '', tariff: '', cost: '', status: 'parking' },
+];
+
+function renderJournalTable(data) {
+    const tbody = document.getElementById('journalTableBody');
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Нет данных</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = data.map(item => `
+        <tr>
+            <td>${item.entry}</td>
+            <td>${item.brand}</td>
+            <td>${item.color}</td>
+            <td><strong>${item.plate}</strong></td>
+            <td>${item.exit || '—'}</td>
+            <td>${item.tariff || '—'}</td>
+            <td>${item.cost} ₽</td>
+            <td>
+                <span class="status-badge ${item.status === 'parking' ? 'status-parking' : 'status-exit'}">
+                    ${item.status === 'parking' ? '🚗 На парковке' : '✅ Завершен'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterJournal() {
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+    
+    let filtered = [...mockJournalData];
+    
+    if (searchTerm) {
+        filtered = filtered.filter(item => item.plate.toLowerCase().includes(searchTerm));
+    }
+    
+    if (statusFilter !== 'all') {
+        filtered = filtered.filter(item => item.status === statusFilter);
+    }
+    
+    renderJournalTable(filtered);
+}
+
+// Инициализация страницы
+document.addEventListener('DOMContentLoaded', () => {
+    renderJournalTable(mockJournalData);
+    
+    document.getElementById('searchBtn')?.addEventListener('click', filterJournal);
+    document.getElementById('searchInput')?.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') filterJournal();
+    });
+    
+    document.getElementById('exportBtn')?.addEventListener('click', () => {
+        alert('Экспорт в Excel (будет реализован позже)');
+    });
+});
+</script>

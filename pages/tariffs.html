@@ -1,0 +1,105 @@
+<div class="filter-bar" style="justify-content: space-between;">
+    <h3 style="margin: 0;">Действующие тарифы</h3>
+    <button class="btn" id="addTariffBtn">+ Добавить тариф</button>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Тип</th>
+                <th>Стоимость</th>
+                <th>Период</th>
+                <th>Действует</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tariffsTableBody">
+            <tr>
+                <td>Базовый тариф</td>
+                <td>Почасовой</td>
+                <td>50 ₽</td>
+                <td>1 час</td>
+                <td>Круглосуточно</td>
+                <td><button class="btn-icon editTariff" data-id="1">✏️</button></td>
+            </tr>
+            <tr>
+                <td>Ночной тариф</td>
+                <td>Фиксированный</td>
+                <td>200 ₽</td>
+                <td>22:00 - 08:00</td>
+                <td>Ночь</td>
+                <td><button class="btn-icon editTariff" data-id="2">✏️</button></td>
+            </tr>
+            <tr>
+                <td>Суточный</td>
+                <td>Фиксированный</td>
+                <td>500 ₽</td>
+                <td>24 часа</td>
+                <td>Круглосуточно</td>
+                <td><button class="btn-icon editTariff" data-id="3">✏️</button></td>
+            </tr>
+            <tr>
+                <td>Абонемент</td>
+                <td>Месячный</td>
+                <td>5000 ₽</td>
+                <td>30 дней</td>
+                <td>Круглосуточно</td>
+                <td><button class="btn-icon editTariff" data-id="4">✏️</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Модалка добавления/редактирования -->
+<div id="tariffModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: #12151c; border-radius: 20px; padding: 32px; width: 400px;">
+        <h3 id="modalTitle">Добавить тариф</h3>
+        <input type="text" placeholder="Название" id="tariffName" class="filter-input" style="width: 100%; margin: 12px 0;">
+        <select id="tariffType" class="filter-select" style="width: 100%; margin: 12px 0;">
+            <option value="hourly">Почасовой</option>
+            <option value="fixed">Фиксированный</option>
+            <option value="subscription">Абонемент</option>
+        </select>
+        <input type="text" placeholder="Стоимость (руб)" id="tariffPrice" class="filter-input" style="width: 100%; margin: 12px 0;">
+        <input type="text" placeholder="Период (час/день/мес)" id="tariffPeriod" class="filter-input" style="width: 100%; margin: 12px 0;">
+        <div style="display: flex; gap: 12px; margin-top: 20px;">
+            <button class="btn" id="saveTariffBtn">Сохранить</button>
+            <button class="btn btn-secondary" id="closeModalBtn">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const modal = document.getElementById('tariffModal');
+let editingId = null;
+
+document.getElementById('addTariffBtn')?.addEventListener('click', () => {
+    editingId = null;
+    document.getElementById('modalTitle').innerText = 'Добавить тариф';
+    document.getElementById('tariffName').value = '';
+    document.getElementById('tariffType').value = 'hourly';
+    document.getElementById('tariffPrice').value = '';
+    document.getElementById('tariffPeriod').value = '';
+    modal.style.display = 'flex';
+});
+
+document.querySelectorAll('.editTariff').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        editingId = e.target.dataset.id;
+        document.getElementById('modalTitle').innerText = 'Редактировать тариф';
+        // Заполнить данными (в реальном проекте подтягивать из API)
+        modal.style.display = 'flex';
+    });
+});
+
+document.getElementById('closeModalBtn')?.addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+document.getElementById('saveTariffBtn')?.addEventListener('click', () => {
+    alert('Сохранение тарифа (в реальном проекте будет отправка на сервер)');
+    modal.style.display = 'none';
+});
+</script>

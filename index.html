@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParkFlow | Администрирование</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<div class="app">
+    <!-- Боковое меню -->
+    <aside class="sidebar">
+        <div class="logo">Park<span>Flow</span></div>
+        
+        <nav class="nav-menu">
+            <a href="#dashboard" data-page="dashboard" class="nav-item active">
+                <span class="nav-icon">📊</span>
+                <span>Дашборд</span>
+            </a>
+            <a href="#journal" data-page="journal" class="nav-item">
+                <span class="nav-icon">📋</span>
+                <span>Журнал</span>
+            </a>
+            <a href="#monitoring" data-page="monitoring" class="nav-item">
+                <span class="nav-icon">🚗</span>
+                <span>Мониторинг</span>
+            </a>
+            <a href="#statistics" data-page="statistics" class="nav-item">
+                <span class="nav-icon">📈</span>
+                <span>Статистика</span>
+            </a>
+            <a href="#cameras" data-page="cameras" class="nav-item">
+                <span class="nav-icon">📷</span>
+                <span>Камеры</span>
+            </a>
+            <a href="#devices" data-page="devices" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span>Устройства</span>
+            </a>
+            <a href="#pos" data-page="pos" class="nav-item">
+                <span class="nav-icon">💳</span>
+                <span>POS терминалы</span>
+            </a>
+            
+            <div class="nav-divider"></div>
+            
+            <a href="#tariffs" data-page="tariffs" class="nav-item">
+                <span class="nav-icon">💰</span>
+                <span>Тарифы</span>
+            </a>
+            <a href="#alerts" data-page="alerts" class="nav-item">
+                <span class="nav-icon">🔔</span>
+                <span>Оповещения</span>
+            </a>
+            <a href="#blacklist" data-page="blacklist" class="nav-item">
+                <span class="nav-icon">⛔</span>
+                <span>Черный список</span>
+            </a>
+            <a href="#whitelist" data-page="whitelist" class="nav-item">
+                <span class="nav-icon">✅</span>
+                <span>Белый список</span>
+            </a>
+            <a href="#subscriptions" data-page="subscriptions" class="nav-item">
+                <span class="nav-icon">🎫</span>
+                <span>Абонементы</span>
+            </a>
+            <a href="#payments" data-page="payments" class="nav-item">
+                <span class="nav-icon">🏦</span>
+                <span>Платежи</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="parking-name">Royal Хабаровск</div>
+            <div class="user-info">
+                <span class="user-avatar">👤</span>
+                <span>Администратор</span>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Основной контент -->
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title" id="pageTitle">Дашборд</div>
+            <div class="top-bar-actions">
+                <button class="btn-icon" id="refreshBtn">🔄</button>
+                <button class="btn-icon" id="notificationsBtn">🔔</button>
+                <div class="datetime" id="datetime"></div>
+            </div>
+        </header>
+        
+        <div class="content-container" id="appContent">
+            <!-- Сюда будет подгружаться контент -->
+            <div class="loading">Загрузка...</div>
+        </div>
+    </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
