@@ -1,177 +1,192 @@
-<div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:24px;">
-    <div class="stat-card">
-        <div class="stat-card-title">Всего абонементов</div>
-        <div class="stat-card-value">12</div>
-        <div class="stat-card-change">активных: 9</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Выручка (абонем.)</div>
-        <div class="stat-card-value">60 000 ₽</div>
-        <div class="stat-card-change">за март 2026</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Истекают скоро</div>
-        <div class="stat-card-value">3</div>
-        <div class="stat-card-change" style="color:#f59e0b;">⚠ до 7 дней</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Просроченных</div>
-        <div class="stat-card-value">3</div>
-        <div class="stat-card-change" style="color:#ef4444;">требует продления</div>
-    </div>
-</div>
-
-<div class="filter-bar" style="justify-content:space-between;">
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <input type="text" class="filter-input" id="subSearch" placeholder="Поиск по номеру / владельцу...">
-        <select class="filter-select" id="subStatusFilter">
-            <option value="all">Все статусы</option>
-            <option value="active">Активен</option>
-            <option value="expiring">Истекает</option>
-            <option value="expired">Истёк</option>
-        </select>
-        <button class="btn" id="subSearchBtn">🔍 Поиск</button>
-    </div>
-    <button class="btn" id="subAddBtn">+ Добавить абонемент</button>
-</div>
-
-<!-- Форма добавления -->
-<div id="subAddForm" style="display:none; background:#12151c; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:24px; margin-bottom:24px;">
-    <h3 style="margin-bottom:16px; font-size:15px;">Новый абонемент</h3>
-    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div>
-            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Гос. номер</div>
-            <input type="text" class="filter-input" id="subPlateInput" placeholder="А001АА27">
-        </div>
-        <div>
-            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Владелец</div>
-            <input type="text" class="filter-input" id="subOwnerInput" placeholder="Фамилия И.О.">
-        </div>
-        <div>
-            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Тип</div>
-            <select class="filter-select" id="subTypeInput">
-                <option value="monthly">Месячный (5 000 ₽)</option>
-                <option value="quarterly">Квартальный (12 000 ₽)</option>
-                <option value="annual">Годовой (40 000 ₽)</option>
-            </select>
-        </div>
-        <div>
-            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Дата начала</div>
-            <input type="date" class="filter-input" id="subStartInput" value="2026-03-30">
-        </div>
-        <button class="btn" id="subSaveBtn">Сохранить</button>
-        <button class="btn btn-secondary" id="subCancelBtn">Отмена</button>
-    </div>
+<div class="filter-bar">
+    <input type="text" class="filter-input" id="subSearch" placeholder="Поиск по номеру" style="width: 300px;">
+    <button class="btn" id="createSubBtn">+ Создать абонемент</button>
 </div>
 
 <div class="table-container">
-    <table>
-        <thead>
-            <tr><th>#</th><th>Гос. номер</th><th>Владелец</th><th>Тип</th><th>Начало</th><th>Окончание</th><th>Стоимость</th><th>Статус</th><th></th></tr>
-        </thead>
+    表
+        <thead>汽<th>Номер</th><th>Тип</th><th>Дата начала</th><th>Дата окончания</th><th>Статус</th><th></th></thead>
         <tbody id="subTableBody"></tbody>
-    </table>
+    现
+</div>
+
+<!-- Modal для создания абонемента -->
+<div id="subModal" style="display: none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: #12151c; border-radius: 20px; padding: 32px; width: 400px; border: 1px solid rgba(255,255,255,0.1);">
+        <h3 style="margin-bottom: 20px;">Создать абонемент</h3>
+        <input type="text" id="subPlate" class="filter-input" placeholder="Номер автомобиля" style="width: 100%; margin-bottom: 16px;">
+        <select id="subType" class="filter-select" style="width: 100%; margin-bottom: 16px;">
+            <option value="monthly">Месячный (5 000 ₽)</option>
+            <option value="yearly">Годовой (50 000 ₽)</option>
+        </select>
+        <input type="date" id="subStartDate" class="filter-input" style="width: 100%; margin-bottom: 16px;">
+        <div style="margin-bottom: 16px;">
+            <span>Дата окончания: </span><strong id="subEndDatePreview">—</strong>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button class="btn" id="saveSubBtn">Сохранить</button>
+            <button class="btn btn-secondary" id="closeSubModalBtn">Отмена</button>
+        </div>
+    </div>
 </div>
 
 <script>
-const typeConfig = {
-    monthly: {label:'Месячный', price:5000, days:30},
-    quarterly: {label:'Квартальный', price:12000, days:90},
-    annual: {label:'Годовой', price:40000, days:365},
-};
-
-let subs = [
-    {id:1, plate:'М878ВС27', owner:'Петров А.В.', type:'monthly', start:'01.03.2026', end:'31.03.2026', price:5000, status:'expiring'},
-    {id:2, plate:'Т496НО28', owner:'Сидорова Е.К.', type:'monthly', start:'01.03.2026', end:'31.03.2026', price:5000, status:'expiring'},
-    {id:3, plate:'О558АТ27', owner:'ООО «Амур-Сервис»', type:'quarterly', start:'01.01.2026', end:'31.03.2026', price:12000, status:'expiring'},
-    {id:4, plate:'К966СА27', owner:'Иванов И.И.', type:'annual', start:'10.03.2025', end:'10.03.2026', price:40000, status:'expired'},
-    {id:5, plate:'С164ЕЕ27', owner:'Морозов Д.С.', type:'monthly', start:'01.02.2026', end:'28.02.2026', price:5000, status:'expired'},
-    {id:6, plate:'У12ТТО27', owner:'Козлова Н.Р.', type:'monthly', start:'01.03.2026', end:'31.03.2026', price:5000, status:'expiring'},
-    {id:7, plate:'Р823УК27', owner:'Федотов П.А.', type:'quarterly', start:'01.02.2026', end:'30.04.2026', price:12000, status:'active'},
-    {id:8, plate:'Н445ОМ27', owner:'Васильева Т.Г.', type:'monthly', start:'15.03.2026', end:'15.04.2026', price:5000, status:'active'},
-    {id:9, plate:'Е119КХ27', owner:'Смирнов Р.В.', type:'annual', start:'01.04.2025', end:'01.04.2026', price:40000, status:'active'},
-    {id:10, plate:'А721РС27', owner:'ИП Захаров О.Н.', type:'monthly', start:'01.03.2026', end:'31.03.2026', price:5000, status:'expired'},
-    {id:11, plate:'В300ВО27', owner:'Кузнецов Д.В.', type:'quarterly', start:'01.03.2026', end:'31.05.2026', price:12000, status:'active'},
-    {id:12, plate:'Х678МА27', owner:'Ломакина А.С.', type:'annual', start:'01.03.2025', end:'01.03.2027', price:40000, status:'active'},
-];
-let nextSubId = 13;
-
-const statusStyles = {
-    active: {badge:'status-parking', label:'✅ Активен'},
-    expiring: {badge:'', label:'⏳ Истекает', style:'background:rgba(245,158,11,0.15);color:#f59e0b;'},
-    expired: {badge:'status-exit', label:'❌ Истёк'},
-};
-
-function renderSubs(data) {
-    document.getElementById('subTableBody').innerHTML = data.map((s,i)=>{
-        const st = statusStyles[s.status];
-        const badge = st.style
-            ? `<span class="status-badge" style="${st.style}">${st.label}</span>`
-            : `<span class="status-badge ${st.badge}">${st.label}</span>`;
-        return `<tr>
-            <td style="color:#6b7280;">${i+1}</td>
-            <td><strong>${s.plate}</strong></td>
-            <td>${s.owner}</td>
-            <td>${typeConfig[s.type].label}</td>
-            <td style="color:#9ca3af;">${s.start}</td>
-            <td style="color:#9ca3af;">${s.end}</td>
-            <td><strong>${s.price.toLocaleString('ru-RU')} ₽</strong></td>
-            <td>${badge}</td>
-            <td>
-                <button class="btn-icon subDeleteBtn" data-id="${s.id}" title="Удалить">🗑️</button>
-            </td>
-        </tr>`;
-    }).join('');
-    document.querySelectorAll('.subDeleteBtn').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-            if (confirm('Удалить абонемент?')) {
-                subs = subs.filter(s=>s.id!==+btn.dataset.id);
-                renderSubs(subs);
-            }
+    const STORAGE_KEY = 'parkflow_subscriptions';
+    
+    let subscriptions = [];
+    
+    function loadSubscriptions() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            subscriptions = JSON.parse(stored);
+        } else {
+            subscriptions = [
+                { plate: 'A123AA27', type: 'monthly', startDate: '2026-03-01', endDate: '2026-03-31', status: 'active' },
+                { plate: 'B456BB27', type: 'yearly', startDate: '2026-01-01', endDate: '2026-12-31', status: 'active' }
+            ];
+            saveSubscriptions();
+        }
+        renderSubscriptions();
+    }
+    
+    function saveSubscriptions() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(subscriptions));
+        window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed; bottom: 20px; right: 20px;
+            background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
+            color: ${type === 'error' ? 'white' : '#000'};
+            padding: 12px 24px; border-radius: 10px;
+            font-weight: 600; z-index: 10000;
+            animation: fadeInOut 2s ease-in-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+    
+    function validatePlate(plate) {
+        const regex = /^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}\d{2,3}$/i;
+        return regex.test(plate.toUpperCase());
+    }
+    
+    function openModal() {
+        const modal = document.getElementById('subModal');
+        modal.style.display = 'flex';
+        
+        // Set default start date to today
+        const today = new Date().toISOString().slice(0,10);
+        document.getElementById('subStartDate').value = today;
+        updateEndDatePreview();
+        
+        document.getElementById('subPlate').value = '';
+        document.getElementById('subType').value = 'monthly';
+    }
+    
+    function updateEndDatePreview() {
+        const startDate = document.getElementById('subStartDate').value;
+        const type = document.getElementById('subType').value;
+        if (!startDate) {
+            document.getElementById('subEndDatePreview').innerText = '—';
+            return;
+        }
+        const date = new Date(startDate);
+        if (type === 'monthly') {
+            date.setMonth(date.getMonth() + 1);
+        } else {
+            date.setFullYear(date.getFullYear() + 1);
+        }
+        document.getElementById('subEndDatePreview').innerText = date.toISOString().slice(0,10);
+    }
+    
+    function saveSubscription() {
+        const plate = document.getElementById('subPlate').value.trim().toUpperCase();
+        if (!plate) {
+            showToast('Введите номер автомобиля', 'error');
+            return;
+        }
+        if (!validatePlate(plate)) {
+            showToast('Неверный формат номера. Пример: А123АА27', 'error');
+            return;
+        }
+        const type = document.getElementById('subType').value;
+        const startDate = document.getElementById('subStartDate').value;
+        if (!startDate) {
+            showToast('Выберите дату начала', 'error');
+            return;
+        }
+        
+        let endDate;
+        const date = new Date(startDate);
+        if (type === 'monthly') {
+            date.setMonth(date.getMonth() + 1);
+        } else {
+            date.setFullYear(date.getFullYear() + 1);
+        }
+        endDate = date.toISOString().slice(0,10);
+        
+        subscriptions.push({
+            plate: plate,
+            type: type,
+            startDate: startDate,
+            endDate: endDate,
+            status: new Date(endDate) > new Date() ? 'active' : 'expired'
         });
+        saveSubscriptions();
+        renderSubscriptions();
+        document.getElementById('subModal').style.display = 'none';
+        showToast(`Абонемент для ${plate} создан`);
+    }
+    
+    function deleteSubscription(index) {
+        const plate = subscriptions[index].plate;
+        if (confirm(`Удалить абонемент для ${plate}?`)) {
+            subscriptions.splice(index, 1);
+            saveSubscriptions();
+            renderSubscriptions();
+            showToast(`Абонемент для ${plate} удален`);
+        }
+    }
+    
+    function renderSubscriptions() {
+        const searchTerm = document.getElementById('subSearch')?.value.toLowerCase() || '';
+        const filtered = subscriptions.filter(sub => sub.plate.toLowerCase().includes(searchTerm));
+        
+        const tbody = document.getElementById('subTableBody');
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Нет абонементов</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = filtered.map((sub, idx) => `
+            <tr>
+                <td><strong>${escapeHtml(sub.plate)}</strong></td>
+                <td>${sub.type === 'monthly' ? 'Месячный' : 'Годовой'}</td>
+                <td>${sub.startDate}</td>
+                <td>${sub.endDate}</td>
+                <td><span class="status-badge" style="background:${sub.status === 'active' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color:${sub.status === 'active' ? '#10b981' : '#ef4444'};">${sub.status === 'active' ? 'Активен' : 'Истек'}</span></td>
+                <td><button class="btn-icon" onclick="deleteSubscription(${subscriptions.indexOf(sub)})" title="Удалить">🗑️</button></td>
+            </tr>
+        `).join('');
+    }
+    
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    
+    document.getElementById('createSubBtn')?.addEventListener('click', openModal);
+    document.getElementById('saveSubBtn')?.addEventListener('click', saveSubscription);
+    document.getElementById('closeSubModalBtn')?.addEventListener('click', () => {
+        document.getElementById('subModal').style.display = 'none';
     });
-}
-
-function filterSubs() {
-    const q = document.getElementById('subSearch').value.trim().toUpperCase();
-    const st = document.getElementById('subStatusFilter').value;
-    let data = [...subs];
-    if (q) data = data.filter(s=>s.plate.includes(q)||s.owner.toUpperCase().includes(q));
-    if (st!=='all') data = data.filter(s=>s.status===st);
-    renderSubs(data);
-}
-
-document.addEventListener('DOMContentLoaded', ()=>{
-    renderSubs(subs);
-    document.getElementById('subAddBtn').addEventListener('click', ()=>{
-        document.getElementById('subAddForm').style.display='block';
-    });
-    document.getElementById('subCancelBtn').addEventListener('click', ()=>{
-        document.getElementById('subAddForm').style.display='none';
-    });
-    document.getElementById('subSaveBtn').addEventListener('click', ()=>{
-        const plate = document.getElementById('subPlateInput').value.trim().toUpperCase();
-        if (!plate) { alert('Введите номер'); return; }
-        const type = document.getElementById('subTypeInput').value;
-        const cfg = typeConfig[type];
-        const startStr = document.getElementById('subStartInput').value;
-        const startD = new Date(startStr);
-        const endD = new Date(startD);
-        endD.setDate(endD.getDate() + cfg.days);
-        subs.unshift({
-            id: nextSubId++, plate,
-            owner: document.getElementById('subOwnerInput').value.trim()||'—',
-            type, start: startD.toLocaleDateString('ru-RU'),
-            end: endD.toLocaleDateString('ru-RU'),
-            price: cfg.price, status:'active',
-        });
-        renderSubs(subs);
-        document.getElementById('subAddForm').style.display='none';
-        document.getElementById('subPlateInput').value='';
-        document.getElementById('subOwnerInput').value='';
-    });
-    document.getElementById('subSearchBtn').addEventListener('click', filterSubs);
-    document.getElementById('subSearch').addEventListener('keyup', e=>{ if(e.key==='Enter') filterSubs(); });
-    document.getElementById('subStatusFilter').addEventListener('change', filterSubs);
-});
+    document.getElementById('subType')?.addEventListener('change', updateEndDatePreview);
+    document.getElementById('subStartDate')?.addEventListener('change', updateEndDatePreview);
+    document.getElementById('subSearch')?.addEventListener('input', renderSubscriptions);
+    
+    loadSubscriptions();
+    
+    window.deleteSubscription = deleteSubscription;
 </script>

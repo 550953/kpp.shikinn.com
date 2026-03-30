@@ -1,112 +1,125 @@
-<div class="filter-bar" style="justify-content:space-between;">
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <input type="text" class="filter-input" id="blSearch" placeholder="Поиск по номеру...">
-        <button class="btn" id="blSearchBtn">🔍 Поиск</button>
-    </div>
-    <button class="btn" style="background:#ef4444; color:#fff;" id="blAddBtn">+ Добавить номер</button>
-</div>
-
-<!-- Форма добавления -->
-<div id="blAddForm" style="display:none; background:#12151c; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:24px; margin-bottom:24px;">
-    <h3 style="margin-bottom:16px; font-size:15px;">Добавить в чёрный список</h3>
-    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-        <div>
-            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Гос. номер</div>
-            <input type="text" class="filter-input" id="blPlateInput" placeholder="Напр. A001AA27" style="text-transform:uppercase;">
-        </div>
-        <div>
-            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Причина</div>
-            <select class="filter-select" id="blReasonInput">
-                <option>Неоплата</option>
-                <option>Нарушение правил</option>
-                <option>Угон (по заявлению)</option>
-                <option>Другое</option>
-            </select>
-        </div>
-        <div>
-            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Комментарий</div>
-            <input type="text" class="filter-input" id="blCommentInput" placeholder="Необязательно">
-        </div>
-        <button class="btn" style="background:#ef4444; color:#fff;" id="blSaveBtn">Сохранить</button>
-        <button class="btn btn-secondary" id="blCancelBtn">Отмена</button>
-    </div>
+<div class="filter-bar">
+    <input type="text" class="filter-input" id="blacklistSearch" placeholder="Поиск по номеру" style="width: 300px;">
+    <input type="text" class="filter-input" id="newPlateInput" placeholder="Номер автомобиля (например: А123АА27)" style="width: 250px;">
+    <button class="btn" id="addToBlacklistBtn">+ Добавить в черный список</button>
 </div>
 
 <div class="table-container">
-    <table>
-        <thead>
-            <tr><th>#</th><th>Гос. номер</th><th>Причина</th><th>Добавлен</th><th>Добавил</th><th>Комментарий</th><th></th></tr>
-        </thead>
-        <tbody id="blTableBody"></tbody>
-    </table>
+    表
+        <thead><tr><th>Номер</th><th>Дата добавления</th><th>Причина</th><th></th></thead>
+        <tbody id="blacklistTableBody"></tbody>
+    现
 </div>
 
 <script>
-let blacklist = [
-    {id:1, plate:'Е321КА27', reason:'Неоплата', added:'12.03.2026', by:'Администратор', comment:'3 выезда без оплаты'},
-    {id:2, plate:'А457РС27', reason:'Нарушение правил', added:'18.03.2026', by:'Администратор', comment:'Повреждение шлагбаума'},
-    {id:3, plate:'В674НМ27', reason:'Угон (по заявлению)', added:'21.03.2026', by:'Администратор', comment:'Уведомление от полиции'},
-    {id:4, plate:'К138ОА27', reason:'Неоплата', added:'25.03.2026', by:'Оператор', comment:''},
-    {id:5, plate:'Т902УЕ27', reason:'Нарушение правил', added:'27.03.2026', by:'Администратор', comment:'Систематическое нарушение разметки'},
-];
-let nextId = 6;
-
-function renderBlacklist(data) {
-    document.getElementById('blTableBody').innerHTML = data.map((item,i)=>`
-        <tr>
-            <td style="color:#6b7280;">${i+1}</td>
-            <td><strong style="color:#ef4444;">${item.plate}</strong></td>
-            <td>${item.reason}</td>
-            <td style="color:#9ca3af;">${item.added}</td>
-            <td style="color:#9ca3af;">${item.by}</td>
-            <td style="color:#9ca3af;">${item.comment||'—'}</td>
-            <td>
-                <button class="btn-icon blDeleteBtn" data-id="${item.id}" title="Удалить из списка">🗑️</button>
-            </td>
-        </tr>
-    `).join('');
-    document.querySelectorAll('.blDeleteBtn').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-            if (confirm('Удалить номер из чёрного списка?')) {
-                blacklist = blacklist.filter(b=>b.id!==+btn.dataset.id);
-                renderBlacklist(blacklist);
-            }
+    const STORAGE_KEY = 'parkflow_blacklist';
+    
+    let blacklist = [];
+    
+    function loadBlacklist() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            blacklist = JSON.parse(stored);
+        } else {
+            blacklist = [
+                { plate: 'X000XX00', date: '2026-03-20', reason: 'Неоплаченные штрафы' },
+                { plate: 'Y111YY11', date: '2026-03-22', reason: 'Повторное нарушение' }
+            ];
+            saveBlacklist();
+        }
+        renderBlacklist();
+    }
+    
+    function saveBlacklist() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(blacklist));
+        // Trigger storage event for statistics page
+        window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }));
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed; bottom: 20px; right: 20px;
+            background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
+            color: ${type === 'error' ? 'white' : '#000'};
+            padding: 12px 24px; border-radius: 10px;
+            font-weight: 600; z-index: 10000;
+            animation: fadeInOut 2s ease-in-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+    
+    function validatePlate(plate) {
+        const regex = /^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}\d{2,3}$/i;
+        return regex.test(plate.toUpperCase());
+    }
+    
+    function addToBlacklist() {
+        const input = document.getElementById('newPlateInput');
+        let plate = input.value.trim().toUpperCase();
+        if (!plate) {
+            showToast('Введите номер автомобиля', 'error');
+            return;
+        }
+        if (!validatePlate(plate)) {
+            showToast('Неверный формат номера. Пример: А123АА27', 'error');
+            return;
+        }
+        if (blacklist.some(item => item.plate === plate)) {
+            showToast('Номер уже в черном списке', 'error');
+            return;
+        }
+        const reason = prompt('Причина добавления (необязательно):', 'Нарушение');
+        blacklist.push({
+            plate: plate,
+            date: new Date().toISOString().slice(0,10),
+            reason: reason || '—'
         });
-    });
-}
-
-document.addEventListener('DOMContentLoaded', ()=>{
-    renderBlacklist(blacklist);
-
-    document.getElementById('blAddBtn').addEventListener('click', ()=>{
-        document.getElementById('blAddForm').style.display='block';
-        document.getElementById('blPlateInput').focus();
-    });
-    document.getElementById('blCancelBtn').addEventListener('click', ()=>{
-        document.getElementById('blAddForm').style.display='none';
-    });
-    document.getElementById('blSaveBtn').addEventListener('click', ()=>{
-        const plate = document.getElementById('blPlateInput').value.trim().toUpperCase();
-        if (!plate) { alert('Введите номер автомобиля'); return; }
-        blacklist.unshift({
-            id: nextId++,
-            plate,
-            reason: document.getElementById('blReasonInput').value,
-            added: new Date().toLocaleDateString('ru-RU'),
-            by: 'Администратор',
-            comment: document.getElementById('blCommentInput').value.trim(),
-        });
-        renderBlacklist(blacklist);
-        document.getElementById('blAddForm').style.display='none';
-        document.getElementById('blPlateInput').value='';
-        document.getElementById('blCommentInput').value='';
-    });
-    document.getElementById('blSearchBtn').addEventListener('click', ()=>{
-        const q = document.getElementById('blSearch').value.trim().toUpperCase();
-        renderBlacklist(q ? blacklist.filter(b=>b.plate.includes(q)) : blacklist);
-    });
-    document.getElementById('blSearch').addEventListener('keyup', e=>{
-        if (e.key==='Enter') document.getElementById('blSearchBtn').click();
-    });
-});
+        saveBlacklist();
+        renderBlacklist();
+        input.value = '';
+        showToast(`Номер ${plate} добавлен в черный список`);
+    }
+    
+    function removeFromBlacklist(index) {
+        const plate = blacklist[index].plate;
+        if (confirm(`Удалить ${plate} из черного списка?`)) {
+            blacklist.splice(index, 1);
+            saveBlacklist();
+            renderBlacklist();
+            showToast(`Номер ${plate} удален из черного списка`);
+        }
+    }
+    
+    function renderBlacklist() {
+        const searchTerm = document.getElementById('blacklistSearch')?.value.toLowerCase() || '';
+        const filtered = blacklist.filter(item => item.plate.toLowerCase().includes(searchTerm));
+        
+        const tbody = document.getElementById('blacklistTableBody');
+        if (!filtered.length) {
+            tbody.innerHTML = '后台<td colspan="4" style="text-align: center;">Список пуст</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = filtered.map((item, idx) => `
+            <tr>
+                <td><strong>${escapeHtml(item.plate)}</strong></td>
+                <td>${item.date}</td>
+                <td>${escapeHtml(item.reason)}</td>
+                <td><button class="btn-icon" onclick="removeFromBlacklist(${blacklist.indexOf(item)})" title="Удалить">🗑️</button></td>
+            </tr>
+        `).join('');
+    }
+    
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    
+    document.getElementById('addToBlacklistBtn')?.addEventListener('click', addToBlacklist);
+    document.getElementById('blacklistSearch')?.addEventListener('input', renderBlacklist);
+    
+    loadBlacklist();
+    
+    window.removeFromBlacklist = removeFromBlacklist;
 </script>

@@ -1,102 +1,136 @@
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:24px;">
-    <div class="stat-card">
-        <div class="stat-card-title">POS-терминалов</div>
-        <div class="stat-card-value">2</div>
-        <div class="stat-card-change">в сети: 1 / офлайн: 1</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Операций сегодня</div>
-        <div class="stat-card-value">47</div>
-        <div class="stat-card-change">↑ +8% к вчера</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Выручка через POS</div>
-        <div class="stat-card-value">3 750 ₽</div>
-        <div class="stat-card-change">за сегодня</div>
-    </div>
-</div>
-
-<div class="filter-bar" style="justify-content:flex-end;">
-    <button class="btn btn-secondary" id="refreshPosBtn">🔄 Обновить</button>
+<div class="filter-bar">
+    <input type="text" class="filter-input" id="posSearch" placeholder="Поиск по IP или названию" style="width: 300px;">
+    <button class="btn" id="addPosBtn">+ Добавить терминал</button>
+    <button class="btn btn-secondary" id="refreshPosBtn">🔄 Проверить все</button>
 </div>
 
 <div class="table-container">
     <table>
-        <thead>
-            <tr>
-                <th>Терминал</th>
-                <th>Модель</th>
-                <th>IP-адрес</th>
-                <th>Расположение</th>
-                <th>Последняя операция</th>
-                <th>Сумма</th>
-                <th>Статус</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Название</th><th>IP-адрес</th><th>Статус</th><th>Последняя операция</th><th>Действия</th></tr></thead>
         <tbody id="posTableBody"></tbody>
     </table>
 </div>
 
-<!-- Последние операции -->
-<div class="stat-card" style="margin-top:24px; padding:24px;">
-    <div class="stat-card-title" style="font-size:15px; font-weight:600; color:#e8eaf0; margin-bottom:16px;">Последние операции</div>
-    <div class="table-container" style="margin:0;">
-        <table>
-            <thead>
-                <tr><th>Время</th><th>Терминал</th><th>Номер авто</th><th>Сумма</th><th>Способ</th><th>Статус</th></tr>
-            </thead>
-            <tbody id="posOpsBody"></tbody>
-        </table>
-    </div>
-</div>
-
 <script>
-const posTerminals = [
-    {id:1, name:'POS #1', model:'aQsi Cube 5', ip:'192.168.1.50', location:'Касса (въезд)', lastOp:'30.03.2026 10:38', lastAmt:150, status:'online'},
-    {id:2, name:'POS #2', model:'aQsi Cube 5', ip:'192.168.1.51', location:'Стойка выезда', lastOp:'29.03.2026 18:22', lastAmt:100, status:'offline'},
-];
-
-const posOps = [
-    {time:'10:38', terminal:'POS #1', plate:'K966CA27', amount:150, method:'Карта', status:'success'},
-    {time:'10:22', terminal:'POS #1', plate:'M007XE27', amount:100, method:'Наличные', status:'success'},
-    {time:'10:07', terminal:'POS #1', plate:'C088CP125', amount:50, method:'Карта', status:'success'},
-    {time:'09:51', terminal:'POS #1', plate:'P823YK27', amount:200, method:'Карта', status:'success'},
-    {time:'09:44', terminal:'POS #1', plate:'T496HO28', amount:100, method:'Наличные', status:'success'},
-    {time:'09:30', terminal:'POS #1', plate:'Y12TTO27', amount:250, method:'Карта', status:'success'},
-    {time:'09:18', terminal:'POS #1', plate:'O558AT27', amount:50, method:'Карта', status:'failed'},
-    {time:'09:05', terminal:'POS #1', plate:'M878BC27', amount:150, method:'Наличные', status:'success'},
-];
-
-document.getElementById('posTableBody').innerHTML = posTerminals.map(t=>`
-    <tr>
-        <td><strong>${t.name}</strong></td>
-        <td style="color:#9ca3af;">${t.model}</td>
-        <td style="font-family:monospace; color:#9ca3af;">${t.ip}</td>
-        <td>${t.location}</td>
-        <td style="color:#9ca3af;">${t.lastOp}</td>
-        <td><strong>${t.lastAmt} ₽</strong></td>
-        <td>
-            <span class="status-badge ${t.status==='online'?'status-parking':'status-exit'}">
-                ${t.status==='online'?'🟢 Онлайн':'🔴 Офлайн'}
-            </span>
-        </td>
-    </tr>
-`).join('');
-
-document.getElementById('posOpsBody').innerHTML = posOps.map(o=>`
-    <tr>
-        <td style="color:#9ca3af;">${o.time}</td>
-        <td>${o.terminal}</td>
-        <td><strong>${o.plate}</strong></td>
-        <td><strong>${o.amount} ₽</strong></td>
-        <td>${o.method}</td>
-        <td>
-            <span class="status-badge ${o.status==='success'?'status-parking':'status-exit'}">
-                ${o.status==='success'?'✅ Успешно':'❌ Отказ'}
-            </span>
-        </td>
-    </tr>
-`).join('');
-
-document.getElementById('refreshPosBtn').addEventListener('click', ()=>{});
+    const STORAGE_KEY = 'parkflow_pos';
+    
+    let terminals = [];
+    
+    function loadTerminals() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            terminals = JSON.parse(stored);
+        } else {
+            terminals = [
+                { name: 'aQsi Cube #1', ip: '192.168.1.201', status: 'online', lastOp: '25.03 10:35' },
+                { name: 'aQsi Cube #2', ip: '192.168.1.202', status: 'online', lastOp: '25.03 09:58' }
+            ];
+            saveTerminals();
+        }
+        renderTerminals();
+    }
+    
+    function saveTerminals() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(terminals));
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed; bottom: 20px; right: 20px;
+            background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
+            color: ${type === 'error' ? 'white' : '#000'};
+            padding: 12px 24px; border-radius: 10px;
+            font-weight: 600; z-index: 10000;
+            animation: fadeInOut 2s ease-in-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+    
+    function toggleStatus(index) {
+        terminals[index].status = terminals[index].status === 'online' ? 'offline' : 'online';
+        saveTerminals();
+        renderTerminals();
+        showToast(`${terminals[index].name}: ${terminals[index].status === 'online' ? '🟢 Онлайн' : '🔴 Офлайн'}`);
+    }
+    
+    function testTerminal(index) {
+        showToast(`Проверка ${terminals[index].name}...`, 'info');
+        setTimeout(() => {
+            if (terminals[index].status === 'online') {
+                showToast(`✅ ${terminals[index].name} отвечает (${terminals[index].ip})`);
+            } else {
+                showToast(`❌ ${terminals[index].name} не отвечает`, 'error');
+            }
+        }, 500);
+    }
+    
+    function addTerminal() {
+        const name = prompt('Название терминала:');
+        if (!name) return;
+        const ip = prompt('IP-адрес:');
+        if (!ip) return;
+        terminals.push({ name, ip, status: 'online', lastOp: '—' });
+        saveTerminals();
+        renderTerminals();
+        showToast(`Терминал "${name}" добавлен`);
+    }
+    
+    function deleteTerminal(index) {
+        if (confirm(`Удалить ${terminals[index].name}?`)) {
+            terminals.splice(index, 1);
+            saveTerminals();
+            renderTerminals();
+            showToast(`Терминал удален`);
+        }
+    }
+    
+    function renderTerminals() {
+        const searchTerm = document.getElementById('posSearch')?.value.toLowerCase() || '';
+        const filtered = terminals.filter(t => 
+            t.name.toLowerCase().includes(searchTerm) || 
+            t.ip.includes(searchTerm)
+        );
+        
+        const tbody = document.getElementById('posTableBody');
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Нет терминалов</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = filtered.map((term, idx) => `
+            <tr>
+                <td><strong>${escapeHtml(term.name)}</strong></td>
+                <td><code>${escapeHtml(term.ip)}</code></td>
+                <td><span class="status-badge" style="background:${term.status === 'online' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color:${term.status === 'online' ? '#10b981' : '#ef4444'};">${term.status === 'online' ? '🟢 Онлайн' : '🔴 Офлайн'}</span></td>
+                <td>${escapeHtml(term.lastOp)}</td>
+                <td style="white-space: nowrap;">
+                    <button class="btn-icon" onclick="testTerminal(${terminals.indexOf(term)})" title="Проверить">📡</button>
+                    <button class="btn-icon" onclick="toggleStatus(${terminals.indexOf(term)})" title="Статус">🔄</button>
+                    <button class="btn-icon" onclick="deleteTerminal(${terminals.indexOf(term)})" title="Удалить">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    
+    document.getElementById('addPosBtn')?.addEventListener('click', addTerminal);
+    document.getElementById('refreshPosBtn')?.addEventListener('click', () => {
+        showToast('Проверка связи с терминалами...');
+        setTimeout(() => {
+            const online = terminals.filter(t => t.status === 'online').length;
+            showToast(`Терминалы: ${online} онлайн, ${terminals.length - online} офлайн`);
+        }, 800);
+    });
+    document.getElementById('posSearch')?.addEventListener('input', () => renderTerminals());
+    
+    loadTerminals();
+    
+    window.testTerminal = testTerminal;
+    window.toggleStatus = toggleStatus;
+    window.deleteTerminal = deleteTerminal;
 </script>

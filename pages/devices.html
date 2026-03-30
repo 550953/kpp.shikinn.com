@@ -1,87 +1,103 @@
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
-    <div class="stat-card">
-        <div class="stat-card-title">Всего устройств</div>
-        <div class="stat-card-value">8</div>
-        <div class="stat-card-change">в сети: 7 / офлайн: 1</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Контроллеры</div>
-        <div class="stat-card-value">2</div>
-        <div class="stat-card-change">Laurent-2</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Шлагбаумы</div>
-        <div class="stat-card-value">2</div>
-        <div class="stat-card-change" style="color:#10b981;">Все в норме</div>
-    </div>
-</div>
-
-<div class="filter-bar" style="justify-content:space-between; margin-bottom:16px;">
-    <select class="filter-select" id="devTypeFilter">
-        <option value="all">Все типы</option>
-        <option value="controller">Контроллер</option>
-        <option value="barrier">Шлагбаум</option>
-        <option value="radar">Радар</option>
-        <option value="terminal">Терминал</option>
-    </select>
-    <button class="btn btn-secondary" id="refreshDevBtn">🔄 Обновить</button>
+<div class="filter-bar">
+    <button class="btn btn-secondary" id="refreshDevicesBtn">🔄 Проверить все устройства</button>
 </div>
 
 <div class="table-container">
     <table>
-        <thead>
-            <tr>
-                <th>Устройство</th>
-                <th>Модель</th>
-                <th>IP-адрес</th>
-                <th>Расположение</th>
-                <th>Прошивка</th>
-                <th>Последний пинг</th>
-                <th>Статус</th>
-            </tr>
-        </thead>
-        <tbody id="devTableBody"></tbody>
+        <thead><tr><th>Устройство</th><th>Модель</th><th>IP / Порт</th><th>Статус</th><th>Действия</th></tr></thead>
+        <tbody id="devicesTableBody"></tbody>
     </table>
 </div>
 
 <script>
-const devices = [
-    {id:1, name:'Контроллер въезда', model:'Laurent-2', type:'controller', ip:'192.168.1.10', location:'Стойка въезда', firmware:'v2.4.1', lastPing:'30.03.2026 10:41', status:'online'},
-    {id:2, name:'Контроллер выезда', model:'Laurent-2', type:'controller', ip:'192.168.1.11', location:'Стойка выезда', firmware:'v2.4.1', lastPing:'30.03.2026 10:41', status:'online'},
-    {id:3, name:'Шлагбаум въезда', model:'CAME G4040', type:'barrier', ip:'—', location:'Въезд', firmware:'—', lastPing:'30.03.2026 10:40', status:'online'},
-    {id:4, name:'Шлагбаум выезда', model:'CAME G4040', type:'barrier', ip:'—', location:'Выезд', firmware:'—', lastPing:'30.03.2026 10:40', status:'online'},
-    {id:5, name:'Радар въезда', model:'FAAC 740D', type:'radar', ip:'—', location:'Въезд (петля)', firmware:'—', lastPing:'30.03.2026 10:39', status:'online'},
-    {id:6, name:'Радар выезда', model:'FAAC 740D', type:'radar', ip:'—', location:'Выезд (петля)', firmware:'—', lastPing:'30.03.2026 10:39', status:'online'},
-    {id:7, name:'POS-терминал #1', model:'aQsi Cube 5', type:'terminal', ip:'192.168.1.50', location:'Касса', firmware:'v3.1.0', lastPing:'30.03.2026 10:41', status:'online'},
-    {id:8, name:'POS-терминал #2', model:'aQsi Cube 5', type:'terminal', ip:'192.168.1.51', location:'Стойка выезда', firmware:'v3.1.0', lastPing:'29.03.2026 18:22', status:'offline'},
-];
-
-const typeMap = {controller:'Контроллер', barrier:'Шлагбаум', radar:'Радар', terminal:'Терминал'};
-
-function renderDevices(data) {
-    document.getElementById('devTableBody').innerHTML = data.map(d=>`
-        <tr>
-            <td><strong>${d.name}</strong></td>
-            <td style="color:#9ca3af;">${d.model}</td>
-            <td style="font-family:monospace; color:#9ca3af;">${d.ip}</td>
-            <td>${d.location}</td>
-            <td style="color:#9ca3af;">${d.firmware}</td>
-            <td style="color:#9ca3af;">${d.lastPing}</td>
-            <td>
-                <span class="status-badge ${d.status==='online'?'status-parking':'status-exit'}">
-                    ${d.status==='online'?'🟢 Онлайн':'🔴 Офлайн'}
-                </span>
-            </td>
-        </tr>
-    `).join('');
-}
-
-document.addEventListener('DOMContentLoaded', ()=>{
-    renderDevices(devices);
-    document.getElementById('devTypeFilter').addEventListener('change', function(){
-        const v = this.value;
-        renderDevices(v==='all' ? devices : devices.filter(d=>d.type===v));
+    const STORAGE_KEY = 'parkflow_devices';
+    
+    let devices = [];
+    
+    function loadDevices() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            devices = JSON.parse(stored);
+        } else {
+            devices = [
+                { name: 'Контроллер', model: 'Laurent-2', address: '192.168.1.50:2424', status: 'online' },
+                { name: 'Радар въезд', model: 'ZKTeco VR10 Pro', address: 'RS485 #1', status: 'online' },
+                { name: 'Радар выезд', model: 'ZKTeco VR10 Pro', address: 'RS485 #2', status: 'online' },
+                { name: 'Шлагбаум въезд', model: '—', address: 'Реле 1', status: 'online' },
+                { name: 'Шлагбаум выезд', model: '—', address: 'Реле 2', status: 'online' }
+            ];
+            saveDevices();
+        }
+        renderDevices();
+    }
+    
+    function saveDevices() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(devices));
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed; bottom: 20px; right: 20px;
+            background: ${type === 'error' ? '#ef4444' : '#00e5ff'};
+            color: ${type === 'error' ? 'white' : '#000'};
+            padding: 12px 24px; border-radius: 10px;
+            font-weight: 600; z-index: 10000;
+            animation: fadeInOut 2s ease-in-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+    
+    function toggleDeviceStatus(index) {
+        devices[index].status = devices[index].status === 'online' ? 'offline' : 'online';
+        saveDevices();
+        renderDevices();
+        showToast(`${devices[index].name}: ${devices[index].status === 'online' ? '🟢 Онлайн' : '🔴 Офлайн'}`);
+    }
+    
+    function testDevice(index) {
+        const device = devices[index];
+        showToast(`Проверка ${device.name}...`, 'info');
+        setTimeout(() => {
+            if (device.status === 'online') {
+                showToast(`✅ ${device.name} отвечает`);
+            } else {
+                showToast(`❌ ${device.name} не отвечает`, 'error');
+            }
+        }, 500);
+    }
+    
+    function renderDevices() {
+        const tbody = document.getElementById('devicesTableBody');
+        tbody.innerHTML = devices.map((dev, idx) => `
+            <tr>
+                <td><strong>${escapeHtml(dev.name)}</strong></td>
+                <td>${escapeHtml(dev.model)}</td>
+                <td><code>${escapeHtml(dev.address)}</code></td>
+                <td><span class="status-badge" style="background:${dev.status === 'online' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color:${dev.status === 'online' ? '#10b981' : '#ef4444'};">${dev.status === 'online' ? '🟢 Онлайн' : '🔴 Офлайн'}</span></td>
+                <td style="white-space: nowrap;">
+                    <button class="btn-icon" onclick="testDevice(${idx})" title="Проверить связь">📡</button>
+                    <button class="btn-icon" onclick="toggleDeviceStatus(${idx})" title="Переключить статус">🔄</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    
+    document.getElementById('refreshDevicesBtn')?.addEventListener('click', () => {
+        showToast('Проверка связи со всеми устройствами...');
+        setTimeout(() => {
+            const online = devices.filter(d => d.status === 'online').length;
+            showToast(`Устройства: ${online} онлайн, ${devices.length - online} офлайн`);
+        }, 1000);
     });
-    document.getElementById('refreshDevBtn').addEventListener('click', ()=>renderDevices(devices));
-});
+    
+    loadDevices();
+    
+    window.testDevice = testDevice;
+    window.toggleDeviceStatus = toggleDeviceStatus;
 </script>
