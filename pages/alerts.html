@@ -1,6 +1,118 @@
-<div class="stat-card" style="padding: 24px;">
-    <div class="stat-card-title">Оповещения</div>
-    <div style="margin-top: 16px; color: #6b7280;">
-        Нет новых оповещений
+<div class="filter-bar" style="justify-content:space-between;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <select class="filter-select" id="alertTypeFilter">
+            <option value="all">Все типы</option>
+            <option value="entry">Въезд</option>
+            <option value="exit">Выезд</option>
+            <option value="error">Ошибка</option>
+            <option value="payment">Оплата</option>
+            <option value="device">Устройство</option>
+        </select>
+        <select class="filter-select" id="alertSeverityFilter">
+            <option value="all">Любой приоритет</option>
+            <option value="info">Инфо</option>
+            <option value="warning">Предупреждение</option>
+            <option value="error">Ошибка</option>
+        </select>
+        <input type="date" class="filter-input" style="min-width:150px;" value="2026-03-30">
+    </div>
+    <button class="btn btn-secondary" onclick="renderAlerts(alertsData)">🔄 Обновить</button>
+</div>
+
+<!-- Счётчики -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-card-title">Всего сегодня</div>
+        <div class="stat-card-value">63</div>
+        <div class="stat-card-change" style="color:#6b7280;">событий</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Въездов / Выездов</div>
+        <div class="stat-card-value">24 / 23</div>
+        <div class="stat-card-change" style="color:#10b981;">в норме</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Ошибок распознавания</div>
+        <div class="stat-card-value">4</div>
+        <div class="stat-card-change" style="color:#f59e0b;">⚠ требует внимания</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Ошибок устройств</div>
+        <div class="stat-card-value">1</div>
+        <div class="stat-card-change" style="color:#ef4444;">🔴 критично</div>
     </div>
 </div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr><th>Время</th><th>Тип</th><th>Описание</th><th>Номер авто</th><th>Устройство</th><th>Приоритет</th></tr>
+        </thead>
+        <tbody id="alertsTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+const alertsData = [
+    {time:'10:41',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'K966CA27',device:'Камера #1',severity:'info'},
+    {time:'10:38',type:'payment',typeLabel:'Оплата',desc:'Принята оплата 150 ₽',plate:'K966CA27',device:'POS #1',severity:'info'},
+    {time:'10:31',type:'exit',typeLabel:'Выезд',desc:'Автомобиль покинул парковку',plate:'M007XE27',device:'Камера #2',severity:'info'},
+    {time:'10:26',type:'exit',typeLabel:'Выезд',desc:'Автомобиль покинул парковку',plate:'CI64EE27',device:'Камера #2',severity:'info'},
+    {time:'10:22',type:'payment',typeLabel:'Оплата',desc:'Принята оплата 100 ₽',plate:'M007XE27',device:'POS #1',severity:'info'},
+    {time:'10:18',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'K746XH125',device:'Камера #1',severity:'info'},
+    {time:'10:16',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'CI64EE27',device:'Камера #1',severity:'info'},
+    {time:'10:14',type:'error',typeLabel:'Ошибка',desc:'Не удалось распознать номер',plate:'—',device:'Камера #1',severity:'warning'},
+    {time:'10:07',type:'payment',typeLabel:'Оплата',desc:'Принята оплата 50 ₽',plate:'C088CP125',device:'POS #1',severity:'info'},
+    {time:'09:57',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'M878BC27',device:'Камера #1',severity:'info'},
+    {time:'09:54',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'T496HO28',device:'Камера #1',severity:'info'},
+    {time:'09:51',type:'payment',typeLabel:'Оплата',desc:'Принята оплата 200 ₽',plate:'P823YK27',device:'POS #1',severity:'info'},
+    {time:'09:44',type:'exit',typeLabel:'Выезд',desc:'Автомобиль покинул парковку',plate:'M007XE27',device:'Камера #2',severity:'info'},
+    {time:'09:43',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'M007XE27',device:'Камера #1',severity:'info'},
+    {time:'09:35',type:'error',typeLabel:'Ошибка',desc:'Не удалось распознать номер',plate:'—',device:'Камера #2',severity:'warning'},
+    {time:'09:29',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'O558AT27',device:'Камера #1',severity:'info'},
+    {time:'09:18',type:'payment',typeLabel:'Оплата',desc:'Отказ POS-терминала — нет связи',plate:'O558AT27',device:'POS #1',severity:'error'},
+    {time:'09:15',type:'device',typeLabel:'Устройство',desc:'Камера #4 потеряла соединение',plate:'—',device:'Камера #4',severity:'error'},
+    {time:'09:05',type:'payment',typeLabel:'Оплата',desc:'Принята оплата 150 ₽',plate:'M878BC27',device:'POS #1',severity:'info'},
+    {time:'08:56',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'Y12TTO27',device:'Камера #1',severity:'info'},
+    {time:'08:55',type:'entry',typeLabel:'Въезд',desc:'Автомобиль въехал на парковку',plate:'P823YK27',device:'Камера #1',severity:'info'},
+    {time:'08:47',type:'error',typeLabel:'Ошибка',desc:'Не удалось распознать номер',plate:'—',device:'Камера #1',severity:'warning'},
+    {time:'08:32',type:'exit',typeLabel:'Выезд',desc:'Автомобиль покинул парковку',plate:'K746XH125',device:'Камера #2',severity:'info'},
+    {time:'08:21',type:'error',typeLabel:'Ошибка',desc:'Частичное распознавание номера',plate:'???XE27',device:'Камера #2',severity:'warning'},
+];
+
+const severityStyles = {
+    info: {badge:'status-parking', label:'Инфо'},
+    warning: {badge:'', label:'⚠ Предупреждение', style:'background:rgba(245,158,11,0.15);color:#f59e0b;'},
+    error: {badge:'status-exit', label:'🔴 Ошибка'},
+};
+const typeIcons = {entry:'🚗',exit:'🚙',payment:'💰',error:'⚠️',device:'⚙️'};
+
+function renderAlerts(data) {
+    const typeF = document.getElementById('alertTypeFilter').value;
+    const sevF = document.getElementById('alertSeverityFilter').value;
+    let filtered = data;
+    if (typeF!=='all') filtered = filtered.filter(a=>a.type===typeF);
+    if (sevF!=='all') filtered = filtered.filter(a=>a.severity===sevF);
+
+    document.getElementById('alertsTableBody').innerHTML = filtered.map(a=>{
+        const s = severityStyles[a.severity];
+        const badge = s.style
+            ? `<span class="status-badge" style="${s.style}">${s.label}</span>`
+            : `<span class="status-badge ${s.badge}">${s.label}</span>`;
+        return `<tr>
+            <td style="color:#9ca3af; font-family:monospace;">${a.time}</td>
+            <td>${typeIcons[a.type]} ${a.typeLabel}</td>
+            <td>${a.desc}</td>
+            <td><strong>${a.plate}</strong></td>
+            <td style="color:#9ca3af;">${a.device}</td>
+            <td>${badge}</td>
+        </tr>`;
+    }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderAlerts(alertsData);
+    document.getElementById('alertTypeFilter').addEventListener('change', ()=>renderAlerts(alertsData));
+    document.getElementById('alertSeverityFilter').addEventListener('change', ()=>renderAlerts(alertsData));
+});
+</script>

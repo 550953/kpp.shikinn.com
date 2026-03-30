@@ -1,11 +1,109 @@
-<div class="stat-card" style="padding: 24px;">
-    <div class="stat-card-title">Камеры</div>
-    <div style="margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-            <span>Въезд</span><span>192.168.1.101</span><span>🟢 Онлайн</span>
+<div class="filter-bar" style="justify-content:space-between;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <select class="filter-select" id="camStatusFilter">
+            <option value="all">Все статусы</option>
+            <option value="online">Онлайн</option>
+            <option value="offline">Офлайн</option>
+        </select>
+        <select class="filter-select" id="camTypeFilter">
+            <option value="all">Все типы</option>
+            <option value="entry">Въезд</option>
+            <option value="exit">Выезд</option>
+            <option value="overview">Обзорная</option>
+        </select>
+    </div>
+    <button class="btn btn-secondary" id="refreshCamsBtn">🔄 Обновить</button>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Камера</th>
+                <th>IP-адрес</th>
+                <th>Тип</th>
+                <th>Разрешение</th>
+                <th>Последний сигнал</th>
+                <th>Статус</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="camsTableBody"></tbody>
+    </table>
+</div>
+
+<!-- Превью модалка -->
+<div id="previewModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; z-index:1000;">
+    <div style="background:#12151c; border-radius:20px; padding:32px; width:560px; max-width:95vw;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 id="previewTitle">Превью камеры</h3>
+            <button class="btn-icon" id="closePreviewBtn" style="font-size:18px;">✕</button>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span>Выезд</span><span>192.168.1.102</span><span>🟢 Онлайн</span>
+        <div style="background:#0a0c10; border-radius:12px; height:280px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.07);">
+            <div style="text-align:center; color:#6b7280;">
+                <div style="font-size:48px; margin-bottom:12px;">📷</div>
+                <div id="previewStatus" style="font-size:14px;">Подключение к потоку...</div>
+            </div>
         </div>
+        <div id="previewInfo" style="margin-top:16px; font-size:13px; color:#9ca3af; display:flex; gap:24px;"></div>
     </div>
 </div>
+
+<script>
+const cameras = [
+    {id:1, name:'Камера #1 — Въезд', ip:'192.168.1.101', type:'entry', typeLabel:'Въезд', res:'1920×1080', lastSeen:'30.03.2026 10:41', status:'online'},
+    {id:2, name:'Камера #2 — Выезд', ip:'192.168.1.102', type:'exit', typeLabel:'Выезд', res:'1920×1080', lastSeen:'30.03.2026 10:41', status:'online'},
+    {id:3, name:'Камера #3 — Обзорная (ряд A)', ip:'192.168.1.103', type:'overview', typeLabel:'Обзорная', res:'1280×720', lastSeen:'30.03.2026 10:40', status:'online'},
+    {id:4, name:'Камера #4 — Обзорная (ряд B)', ip:'192.168.1.104', type:'overview', typeLabel:'Обзорная', res:'1280×720', lastSeen:'30.03.2026 09:15', status:'offline'},
+    {id:5, name:'Камера #5 — Кассовая зона', ip:'192.168.1.105', type:'overview', typeLabel:'Обзорная', res:'1920×1080', lastSeen:'30.03.2026 10:41', status:'online'},
+    {id:6, name:'Камера #6 — Въезд (дублирующая)', ip:'192.168.1.106', type:'entry', typeLabel:'Въезд', res:'1920×1080', lastSeen:'29.03.2026 22:03', status:'offline'},
+];
+
+function renderCameras(data) {
+    document.getElementById('camsTableBody').innerHTML = data.map(c=>`
+        <tr>
+            <td><strong>${c.name}</strong></td>
+            <td style="font-family:monospace; color:#9ca3af;">${c.ip}</td>
+            <td>${c.typeLabel}</td>
+            <td style="color:#9ca3af;">${c.res}</td>
+            <td style="color:#9ca3af;">${c.lastSeen}</td>
+            <td>
+                <span class="status-badge ${c.status==='online'?'status-parking':'status-exit'}">
+                    ${c.status==='online'?'🟢 Онлайн':'🔴 Офлайн'}
+                </span>
+            </td>
+            <td>
+                <button class="btn-icon previewBtn" data-id="${c.id}" title="Открыть превью">📺</button>
+            </td>
+        </tr>
+    `).join('');
+    document.querySelectorAll('.previewBtn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+            const cam = cameras.find(c=>c.id===+btn.dataset.id);
+            document.getElementById('previewTitle').textContent = cam.name;
+            document.getElementById('previewStatus').textContent = cam.status==='online' ? 'Прямая трансляция (RTSP)' : 'Нет сигнала — камера офлайн';
+            document.getElementById('previewInfo').innerHTML = `<span>IP: ${cam.ip}</span><span>Разрешение: ${cam.res}</span><span>Последний сигнал: ${cam.lastSeen}</span>`;
+            document.getElementById('previewModal').style.display='flex';
+        });
+    });
+}
+
+function filterCameras() {
+    const status = document.getElementById('camStatusFilter').value;
+    const type = document.getElementById('camTypeFilter').value;
+    let data = [...cameras];
+    if (status!=='all') data = data.filter(c=>c.status===status);
+    if (type!=='all') data = data.filter(c=>c.type===type);
+    renderCameras(data);
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderCameras(cameras);
+    document.getElementById('camStatusFilter').addEventListener('change', filterCameras);
+    document.getElementById('camTypeFilter').addEventListener('change', filterCameras);
+    document.getElementById('refreshCamsBtn').addEventListener('click', filterCameras);
+    document.getElementById('closePreviewBtn').addEventListener('click', ()=>{
+        document.getElementById('previewModal').style.display='none';
+    });
+});
+</script>

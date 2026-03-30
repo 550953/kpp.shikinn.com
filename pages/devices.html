@@ -1,14 +1,87 @@
-<div class="stat-card" style="padding: 24px;">
-    <div class="stat-card-title">Устройства</div>
-    <div style="margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-            <span>Контроллер Laurent-2</span><span>192.168.1.50</span><span>🟢 Онлайн</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-            <span>Шлагбаум въезд</span><span>—</span><span>🟢 Работает</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span>Шлагбаум выезд</span><span>—</span><span>🟢 Работает</span>
-        </div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="stat-card">
+        <div class="stat-card-title">Всего устройств</div>
+        <div class="stat-card-value">8</div>
+        <div class="stat-card-change">в сети: 7 / офлайн: 1</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Контроллеры</div>
+        <div class="stat-card-value">2</div>
+        <div class="stat-card-change">Laurent-2</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Шлагбаумы</div>
+        <div class="stat-card-value">2</div>
+        <div class="stat-card-change" style="color:#10b981;">Все в норме</div>
     </div>
 </div>
+
+<div class="filter-bar" style="justify-content:space-between; margin-bottom:16px;">
+    <select class="filter-select" id="devTypeFilter">
+        <option value="all">Все типы</option>
+        <option value="controller">Контроллер</option>
+        <option value="barrier">Шлагбаум</option>
+        <option value="radar">Радар</option>
+        <option value="terminal">Терминал</option>
+    </select>
+    <button class="btn btn-secondary" id="refreshDevBtn">🔄 Обновить</button>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Устройство</th>
+                <th>Модель</th>
+                <th>IP-адрес</th>
+                <th>Расположение</th>
+                <th>Прошивка</th>
+                <th>Последний пинг</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="devTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+const devices = [
+    {id:1, name:'Контроллер въезда', model:'Laurent-2', type:'controller', ip:'192.168.1.10', location:'Стойка въезда', firmware:'v2.4.1', lastPing:'30.03.2026 10:41', status:'online'},
+    {id:2, name:'Контроллер выезда', model:'Laurent-2', type:'controller', ip:'192.168.1.11', location:'Стойка выезда', firmware:'v2.4.1', lastPing:'30.03.2026 10:41', status:'online'},
+    {id:3, name:'Шлагбаум въезда', model:'CAME G4040', type:'barrier', ip:'—', location:'Въезд', firmware:'—', lastPing:'30.03.2026 10:40', status:'online'},
+    {id:4, name:'Шлагбаум выезда', model:'CAME G4040', type:'barrier', ip:'—', location:'Выезд', firmware:'—', lastPing:'30.03.2026 10:40', status:'online'},
+    {id:5, name:'Радар въезда', model:'FAAC 740D', type:'radar', ip:'—', location:'Въезд (петля)', firmware:'—', lastPing:'30.03.2026 10:39', status:'online'},
+    {id:6, name:'Радар выезда', model:'FAAC 740D', type:'radar', ip:'—', location:'Выезд (петля)', firmware:'—', lastPing:'30.03.2026 10:39', status:'online'},
+    {id:7, name:'POS-терминал #1', model:'aQsi Cube 5', type:'terminal', ip:'192.168.1.50', location:'Касса', firmware:'v3.1.0', lastPing:'30.03.2026 10:41', status:'online'},
+    {id:8, name:'POS-терминал #2', model:'aQsi Cube 5', type:'terminal', ip:'192.168.1.51', location:'Стойка выезда', firmware:'v3.1.0', lastPing:'29.03.2026 18:22', status:'offline'},
+];
+
+const typeMap = {controller:'Контроллер', barrier:'Шлагбаум', radar:'Радар', terminal:'Терминал'};
+
+function renderDevices(data) {
+    document.getElementById('devTableBody').innerHTML = data.map(d=>`
+        <tr>
+            <td><strong>${d.name}</strong></td>
+            <td style="color:#9ca3af;">${d.model}</td>
+            <td style="font-family:monospace; color:#9ca3af;">${d.ip}</td>
+            <td>${d.location}</td>
+            <td style="color:#9ca3af;">${d.firmware}</td>
+            <td style="color:#9ca3af;">${d.lastPing}</td>
+            <td>
+                <span class="status-badge ${d.status==='online'?'status-parking':'status-exit'}">
+                    ${d.status==='online'?'🟢 Онлайн':'🔴 Офлайн'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderDevices(devices);
+    document.getElementById('devTypeFilter').addEventListener('change', function(){
+        const v = this.value;
+        renderDevices(v==='all' ? devices : devices.filter(d=>d.type===v));
+    });
+    document.getElementById('refreshDevBtn').addEventListener('click', ()=>renderDevices(devices));
+});
+</script>

@@ -1,17 +1,143 @@
-<div class="stat-card" style="padding: 24px;">
-    <div class="stat-card-title">Статистика</div>
-    <div style="margin-top: 20px;">
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span>Выручка за месяц:</span><span><strong>342 000 ₽</strong></span>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-title">Выручка за март</div>
+        <div class="stat-card-value">184 200 ₽</div>
+        <div class="stat-card-change">↑ +12% к февралю</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Въездов за март</div>
+        <div class="stat-card-value">2 318</div>
+        <div class="stat-card-change">↑ +8% к февралю</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Средний чек</div>
+        <div class="stat-card-value">79 ₽</div>
+        <div class="stat-card-change" style="color:#ef4444;">↓ −3% к февралю</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Среднее время стоянки</div>
+        <div class="stat-card-value">1ч 47м</div>
+        <div class="stat-card-change" style="color:#6b7280;">без изменений</div>
+    </div>
+</div>
+
+<div class="stat-card" style="margin-bottom:24px; padding:24px;">
+    <div class="stat-card-title" style="font-size:15px; font-weight:600; color:#e8eaf0; margin-bottom:20px;">Выручка по дням — март 2026</div>
+    <div id="revenueChart" style="display:flex; align-items:flex-end; gap:5px; height:140px;"></div>
+    <div id="revenueLabels" style="display:flex; gap:5px; margin-top:8px;"></div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px;">
+    <div class="stat-card" style="padding:24px;">
+        <div class="stat-card-title" style="font-size:15px; font-weight:600; color:#e8eaf0; margin-bottom:20px;">Загрузка по часам суток</div>
+        <div id="hoursChart" style="display:flex; align-items:flex-end; gap:3px; height:100px;"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:#6b7280;">
+            <span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>23</span>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span>Всего машин:</span><span><strong>1 247</strong></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span>Средний чек:</span><span><strong>274 ₽</strong></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span>Среднее время:</span><span><strong>2ч 14м</strong></span>
+        <div style="margin-top:16px; font-size:13px; color:#9ca3af;">Пик: <strong style="color:#00e5ff;">09:00–11:00</strong> и <strong style="color:#00e5ff;">17:00–19:00</strong></div>
+    </div>
+
+    <div class="stat-card" style="padding:24px;">
+        <div class="stat-card-title" style="font-size:15px; font-weight:600; color:#e8eaf0; margin-bottom:20px;">Выручка по тарифам</div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;"><span>Базовый (50 ₽/ч)</span><span style="color:#00e5ff;">97 400 ₽</span></div>
+                <div style="background:#1a1e28; border-radius:4px; height:6px;"><div style="background:#00e5ff; height:6px; border-radius:4px; width:53%;"></div></div>
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;"><span>Суточный (500 ₽)</span><span style="color:#00e5ff;">54 500 ₽</span></div>
+                <div style="background:#1a1e28; border-radius:4px; height:6px;"><div style="background:#00e5ff; height:6px; border-radius:4px; width:30%;"></div></div>
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;"><span>Ночной (200 ₽)</span><span style="color:#00e5ff;">22 400 ₽</span></div>
+                <div style="background:#1a1e28; border-radius:4px; height:6px;"><div style="background:#00e5ff; height:6px; border-radius:4px; width:12%;"></div></div>
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;"><span>Абонемент (5000 ₽)</span><span style="color:#00e5ff;">9 900 ₽</span></div>
+                <div style="background:#1a1e28; border-radius:4px; height:6px;"><div style="background:#00e5ff; height:6px; border-radius:4px; width:5%;"></div></div>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="filter-bar" style="justify-content:flex-end; margin-bottom:16px;">
+    <button class="btn btn-secondary">📎 Экспорт CSV</button>
+</div>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr><th>Дата</th><th>Въездов</th><th>Выручка</th><th>Средний чек</th><th>Пиковая загрузка</th></tr>
+        </thead>
+        <tbody id="statsTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+const statsData = [
+    {date:'01.03.2026',entries:68,revenue:5200,avg:76,peak:'72%'},
+    {date:'02.03.2026',entries:71,revenue:5490,avg:77,peak:'75%'},
+    {date:'03.03.2026',entries:82,revenue:6380,avg:77,peak:'83%'},
+    {date:'04.03.2026',entries:59,revenue:4520,avg:76,peak:'61%'},
+    {date:'05.03.2026',entries:63,revenue:4890,avg:77,peak:'65%'},
+    {date:'06.03.2026',entries:88,revenue:7020,avg:79,peak:'89%'},
+    {date:'07.03.2026',entries:91,revenue:7340,avg:80,peak:'94%'},
+    {date:'08.03.2026',entries:54,revenue:4100,avg:75,peak:'56%'},
+    {date:'09.03.2026',entries:48,revenue:3720,avg:77,peak:'50%'},
+    {date:'10.03.2026',entries:79,revenue:6180,avg:78,peak:'82%'},
+    {date:'11.03.2026',entries:84,revenue:6650,avg:79,peak:'87%'},
+    {date:'12.03.2026',entries:76,revenue:5940,avg:78,peak:'79%'},
+    {date:'13.03.2026',entries:80,revenue:6240,avg:78,peak:'83%'},
+    {date:'14.03.2026',entries:93,revenue:7500,avg:80,peak:'96%'},
+    {date:'15.03.2026',entries:61,revenue:4720,avg:77,peak:'63%'},
+    {date:'16.03.2026',entries:55,revenue:4210,avg:76,peak:'57%'},
+    {date:'17.03.2026',entries:87,revenue:6980,avg:80,peak:'90%'},
+    {date:'18.03.2026',entries:90,revenue:7200,avg:80,peak:'93%'},
+    {date:'19.03.2026',entries:85,revenue:6720,avg:79,peak:'88%'},
+    {date:'20.03.2026',entries:78,revenue:6100,avg:78,peak:'81%'},
+    {date:'21.03.2026',entries:95,revenue:7620,avg:80,peak:'98%'},
+    {date:'22.03.2026',entries:52,revenue:3980,avg:76,peak:'54%'},
+    {date:'23.03.2026',entries:46,revenue:3540,avg:77,peak:'48%'},
+    {date:'24.03.2026',entries:82,revenue:6480,avg:79,peak:'85%'},
+    {date:'25.03.2026',entries:77,revenue:6090,avg:79,peak:'80%'},
+    {date:'26.03.2026',entries:89,revenue:7110,avg:80,peak:'92%'},
+    {date:'27.03.2026',entries:83,revenue:6570,avg:79,peak:'86%'},
+    {date:'28.03.2026',entries:91,revenue:7280,avg:80,peak:'94%'},
+    {date:'29.03.2026',entries:58,revenue:4430,avg:76,peak:'60%'},
+    {date:'30.03.2026',entries:47,revenue:3620,avg:77,peak:'49%'},
+];
+
+document.getElementById('statsTableBody').innerHTML = [...statsData].reverse().map(d=>`
+    <tr>
+        <td>${d.date}</td>
+        <td>${d.entries}</td>
+        <td><strong>${d.revenue.toLocaleString('ru-RU')} ₽</strong></td>
+        <td>${d.avg} ₽</td>
+        <td>${d.peak}</td>
+    </tr>
+`).join('');
+
+const maxRev = Math.max(...statsData.map(d=>d.revenue));
+const chart = document.getElementById('revenueChart');
+const labels = document.getElementById('revenueLabels');
+statsData.forEach((d,i)=>{
+    const h = Math.round((d.revenue/maxRev)*130);
+    const bar = document.createElement('div');
+    bar.title = `${d.date}: ${d.revenue.toLocaleString('ru-RU')} ₽`;
+    bar.style.cssText = `flex:1;background:rgba(0,229,255,0.65);height:${h}px;border-radius:3px 3px 0 0;cursor:pointer;transition:background 0.15s;`;
+    bar.onmouseenter=()=>bar.style.background='#00e5ff';
+    bar.onmouseleave=()=>bar.style.background='rgba(0,229,255,0.65)';
+    chart.appendChild(bar);
+    const lbl = document.createElement('div');
+    lbl.textContent = (i%5===0||i===statsData.length-1) ? d.date.slice(0,2) : '';
+    lbl.style.cssText='flex:1;font-size:10px;color:#6b7280;text-align:center;';
+    labels.appendChild(lbl);
+});
+
+const hoursData=[2,1,1,1,2,3,8,18,24,22,19,16,14,13,15,17,20,22,19,14,10,7,5,3];
+const maxH=Math.max(...hoursData);
+hoursData.forEach(v=>{
+    const bar=document.createElement('div');
+    bar.style.cssText=`flex:1;background:rgba(0,229,255,0.55);height:${Math.round((v/maxH)*95)}px;border-radius:2px 2px 0 0;`;
+    document.getElementById('hoursChart').appendChild(bar);
+});
+</script>

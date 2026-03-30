@@ -1,11 +1,102 @@
-<div class="stat-card" style="padding: 24px;">
-    <div class="stat-card-title">POS терминалы</div>
-    <div style="margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-            <span>aQsi Cube #1</span><span>192.168.1.201</span><span>🟢 Онлайн</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-            <span>aQsi Cube #2</span><span>192.168.1.202</span><span>🟢 Онлайн</span>
-        </div>
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-card-title">POS-терминалов</div>
+        <div class="stat-card-value">2</div>
+        <div class="stat-card-change">в сети: 1 / офлайн: 1</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Операций сегодня</div>
+        <div class="stat-card-value">47</div>
+        <div class="stat-card-change">↑ +8% к вчера</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-title">Выручка через POS</div>
+        <div class="stat-card-value">3 750 ₽</div>
+        <div class="stat-card-change">за сегодня</div>
     </div>
 </div>
+
+<div class="filter-bar" style="justify-content:flex-end;">
+    <button class="btn btn-secondary" id="refreshPosBtn">🔄 Обновить</button>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Терминал</th>
+                <th>Модель</th>
+                <th>IP-адрес</th>
+                <th>Расположение</th>
+                <th>Последняя операция</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="posTableBody"></tbody>
+    </table>
+</div>
+
+<!-- Последние операции -->
+<div class="stat-card" style="margin-top:24px; padding:24px;">
+    <div class="stat-card-title" style="font-size:15px; font-weight:600; color:#e8eaf0; margin-bottom:16px;">Последние операции</div>
+    <div class="table-container" style="margin:0;">
+        <table>
+            <thead>
+                <tr><th>Время</th><th>Терминал</th><th>Номер авто</th><th>Сумма</th><th>Способ</th><th>Статус</th></tr>
+            </thead>
+            <tbody id="posOpsBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const posTerminals = [
+    {id:1, name:'POS #1', model:'aQsi Cube 5', ip:'192.168.1.50', location:'Касса (въезд)', lastOp:'30.03.2026 10:38', lastAmt:150, status:'online'},
+    {id:2, name:'POS #2', model:'aQsi Cube 5', ip:'192.168.1.51', location:'Стойка выезда', lastOp:'29.03.2026 18:22', lastAmt:100, status:'offline'},
+];
+
+const posOps = [
+    {time:'10:38', terminal:'POS #1', plate:'K966CA27', amount:150, method:'Карта', status:'success'},
+    {time:'10:22', terminal:'POS #1', plate:'M007XE27', amount:100, method:'Наличные', status:'success'},
+    {time:'10:07', terminal:'POS #1', plate:'C088CP125', amount:50, method:'Карта', status:'success'},
+    {time:'09:51', terminal:'POS #1', plate:'P823YK27', amount:200, method:'Карта', status:'success'},
+    {time:'09:44', terminal:'POS #1', plate:'T496HO28', amount:100, method:'Наличные', status:'success'},
+    {time:'09:30', terminal:'POS #1', plate:'Y12TTO27', amount:250, method:'Карта', status:'success'},
+    {time:'09:18', terminal:'POS #1', plate:'O558AT27', amount:50, method:'Карта', status:'failed'},
+    {time:'09:05', terminal:'POS #1', plate:'M878BC27', amount:150, method:'Наличные', status:'success'},
+];
+
+document.getElementById('posTableBody').innerHTML = posTerminals.map(t=>`
+    <tr>
+        <td><strong>${t.name}</strong></td>
+        <td style="color:#9ca3af;">${t.model}</td>
+        <td style="font-family:monospace; color:#9ca3af;">${t.ip}</td>
+        <td>${t.location}</td>
+        <td style="color:#9ca3af;">${t.lastOp}</td>
+        <td><strong>${t.lastAmt} ₽</strong></td>
+        <td>
+            <span class="status-badge ${t.status==='online'?'status-parking':'status-exit'}">
+                ${t.status==='online'?'🟢 Онлайн':'🔴 Офлайн'}
+            </span>
+        </td>
+    </tr>
+`).join('');
+
+document.getElementById('posOpsBody').innerHTML = posOps.map(o=>`
+    <tr>
+        <td style="color:#9ca3af;">${o.time}</td>
+        <td>${o.terminal}</td>
+        <td><strong>${o.plate}</strong></td>
+        <td><strong>${o.amount} ₽</strong></td>
+        <td>${o.method}</td>
+        <td>
+            <span class="status-badge ${o.status==='success'?'status-parking':'status-exit'}">
+                ${o.status==='success'?'✅ Успешно':'❌ Отказ'}
+            </span>
+        </td>
+    </tr>
+`).join('');
+
+document.getElementById('refreshPosBtn').addEventListener('click', ()=>{});
+</script>

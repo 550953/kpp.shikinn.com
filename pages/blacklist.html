@@ -1,10 +1,112 @@
-<div class="stat-card" style="padding: 24px;">
-    <div class="stat-card-title">Черный список</div>
-    <div style="margin-top: 16px;">
-        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-            <input type="text" class="filter-input" placeholder="Номер автомобиля" style="flex:1;">
-            <button class="btn">Добавить</button>
+<div class="filter-bar" style="justify-content:space-between;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <input type="text" class="filter-input" id="blSearch" placeholder="Поиск по номеру...">
+        <button class="btn" id="blSearchBtn">🔍 Поиск</button>
+    </div>
+    <button class="btn" style="background:#ef4444; color:#fff;" id="blAddBtn">+ Добавить номер</button>
+</div>
+
+<!-- Форма добавления -->
+<div id="blAddForm" style="display:none; background:#12151c; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:24px; margin-bottom:24px;">
+    <h3 style="margin-bottom:16px; font-size:15px;">Добавить в чёрный список</h3>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Гос. номер</div>
+            <input type="text" class="filter-input" id="blPlateInput" placeholder="Напр. A001AA27" style="text-transform:uppercase;">
         </div>
-        <div style="color: #6b7280;">Список пуст</div>
+        <div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Причина</div>
+            <select class="filter-select" id="blReasonInput">
+                <option>Неоплата</option>
+                <option>Нарушение правил</option>
+                <option>Угон (по заявлению)</option>
+                <option>Другое</option>
+            </select>
+        </div>
+        <div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Комментарий</div>
+            <input type="text" class="filter-input" id="blCommentInput" placeholder="Необязательно">
+        </div>
+        <button class="btn" style="background:#ef4444; color:#fff;" id="blSaveBtn">Сохранить</button>
+        <button class="btn btn-secondary" id="blCancelBtn">Отмена</button>
     </div>
 </div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr><th>#</th><th>Гос. номер</th><th>Причина</th><th>Добавлен</th><th>Добавил</th><th>Комментарий</th><th></th></tr>
+        </thead>
+        <tbody id="blTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+let blacklist = [
+    {id:1, plate:'Е321КА27', reason:'Неоплата', added:'12.03.2026', by:'Администратор', comment:'3 выезда без оплаты'},
+    {id:2, plate:'А457РС27', reason:'Нарушение правил', added:'18.03.2026', by:'Администратор', comment:'Повреждение шлагбаума'},
+    {id:3, plate:'В674НМ27', reason:'Угон (по заявлению)', added:'21.03.2026', by:'Администратор', comment:'Уведомление от полиции'},
+    {id:4, plate:'К138ОА27', reason:'Неоплата', added:'25.03.2026', by:'Оператор', comment:''},
+    {id:5, plate:'Т902УЕ27', reason:'Нарушение правил', added:'27.03.2026', by:'Администратор', comment:'Систематическое нарушение разметки'},
+];
+let nextId = 6;
+
+function renderBlacklist(data) {
+    document.getElementById('blTableBody').innerHTML = data.map((item,i)=>`
+        <tr>
+            <td style="color:#6b7280;">${i+1}</td>
+            <td><strong style="color:#ef4444;">${item.plate}</strong></td>
+            <td>${item.reason}</td>
+            <td style="color:#9ca3af;">${item.added}</td>
+            <td style="color:#9ca3af;">${item.by}</td>
+            <td style="color:#9ca3af;">${item.comment||'—'}</td>
+            <td>
+                <button class="btn-icon blDeleteBtn" data-id="${item.id}" title="Удалить из списка">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+    document.querySelectorAll('.blDeleteBtn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+            if (confirm('Удалить номер из чёрного списка?')) {
+                blacklist = blacklist.filter(b=>b.id!==+btn.dataset.id);
+                renderBlacklist(blacklist);
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    renderBlacklist(blacklist);
+
+    document.getElementById('blAddBtn').addEventListener('click', ()=>{
+        document.getElementById('blAddForm').style.display='block';
+        document.getElementById('blPlateInput').focus();
+    });
+    document.getElementById('blCancelBtn').addEventListener('click', ()=>{
+        document.getElementById('blAddForm').style.display='none';
+    });
+    document.getElementById('blSaveBtn').addEventListener('click', ()=>{
+        const plate = document.getElementById('blPlateInput').value.trim().toUpperCase();
+        if (!plate) { alert('Введите номер автомобиля'); return; }
+        blacklist.unshift({
+            id: nextId++,
+            plate,
+            reason: document.getElementById('blReasonInput').value,
+            added: new Date().toLocaleDateString('ru-RU'),
+            by: 'Администратор',
+            comment: document.getElementById('blCommentInput').value.trim(),
+        });
+        renderBlacklist(blacklist);
+        document.getElementById('blAddForm').style.display='none';
+        document.getElementById('blPlateInput').value='';
+        document.getElementById('blCommentInput').value='';
+    });
+    document.getElementById('blSearchBtn').addEventListener('click', ()=>{
+        const q = document.getElementById('blSearch').value.trim().toUpperCase();
+        renderBlacklist(q ? blacklist.filter(b=>b.plate.includes(q)) : blacklist);
+    });
+    document.getElementById('blSearch').addEventListener('keyup', e=>{
+        if (e.key==='Enter') document.getElementById('blSearchBtn').click();
+    });
+});
+</script>
