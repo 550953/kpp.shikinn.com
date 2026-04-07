@@ -1047,11 +1047,12 @@
       
       // Данные для отправки
       const payload = {
-        name: name,
-        phone: phone,
-        page: window.location.href,
-        timestamp: new Date().toISOString()
-      };
+  name: name,
+  phone: phone,
+  page: window.location.href,
+  timestamp: new Date().toISOString(),
+  "x-secret": SECRET_KEY // Добавили ключ внутрь тела запроса
+};
       
       console.log('📤 Отправляю данные:', payload);
       console.log('🌐 URL:', WEBHOOK_URL);
