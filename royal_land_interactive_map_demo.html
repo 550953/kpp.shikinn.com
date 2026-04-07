@@ -1,0 +1,149 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.wrap { display: flex; gap: 0; min-height: 520px; }
+.map-area { position: relative; flex: 1; background: #c8e6a0; border-radius: var(--border-radius-lg) 0 0 var(--border-radius-lg); overflow: hidden; min-height: 480px; }
+.map-bg { position: absolute; inset: 0; }
+.map-title { position: absolute; top: 14px; left: 16px; font-size: 13px; font-weight: 500; color: #2d5a1b; background: rgba(255,255,255,0.85); padding: 4px 10px; border-radius: 6px; }
+.legend { position: absolute; bottom: 14px; left: 14px; background: rgba(255,255,255,0.9); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--color-text-secondary); display: flex; flex-direction: column; gap: 4px; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.obj { position: absolute; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; border: 2px solid transparent; }
+.obj:hover, .obj.active { transform: scale(1.12); border-color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.25); z-index: 10; }
+.obj-label { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 9px; white-space: nowrap; color: #2d5a1b; font-weight: 500; background: rgba(255,255,255,0.8); padding: 1px 4px; border-radius: 3px; }
+
+.side { width: 240px; background: var(--color-background-primary); border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0; border-left: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; }
+.side-top { padding: 16px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.side-top h2 { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.side-top p { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+.side-body { flex: 1; overflow-y: auto; padding: 12px; }
+.obj-card { padding: 12px; }
+.obj-card h3 { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; }
+.obj-card .tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
+.tag-available { background: #eaf3de; color: #3b6d11; }
+.tag-busy { background: #fcebeb; color: #a32d2d; }
+.obj-card .desc { font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 10px; }
+.obj-card .price { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 10px; }
+.obj-card .price span { font-size: 12px; color: var(--color-text-secondary); font-weight: 400; }
+.book-btn { width: 100%; padding: 8px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-primary); }
+.book-btn:hover { background: var(--color-background-secondary); }
+.amenity { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.amenity-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-border-secondary); flex-shrink: 0; }
+.hint { padding: 40px 16px; text-align: center; color: var(--color-text-tertiary); font-size: 13px; line-height: 1.7; }
+.hint svg { display: block; margin: 0 auto 12px; opacity: 0.4; }
+</style>
+
+<div class="wrap">
+  <div class="map-area">
+    <svg class="map-bg" width="100%" height="100%" viewBox="0 0 480 520" xmlns="http://www.w3.org/2000/svg">
+      <rect width="480" height="520" fill="#c8e6a0"/>
+      <rect x="0" y="440" width="480" height="80" fill="#7ec8d4" opacity="0.5" rx="0"/>
+      <text x="240" y="480" text-anchor="middle" fill="#2a7a8a" font-size="11" opacity="0.7">озеро</text>
+      <rect x="60" y="20" width="160" height="80" rx="6" fill="#b0c8a0" stroke="#8aaa78" stroke-width="1"/>
+      <text x="140" y="55" text-anchor="middle" fill="#3a5a28" font-size="10">Отель Лайм</text>
+      <rect x="290" y="20" width="130" height="60" rx="6" fill="#b0c8a0" stroke="#8aaa78" stroke-width="1"/>
+      <text x="355" y="50" text-anchor="middle" fill="#3a5a28" font-size="10">Отель Роял</text>
+      <rect x="60" y="110" width="80" height="50" rx="4" fill="#9fc8b0" stroke="#7aaa88" stroke-width="1"/>
+      <text x="100" y="140" text-anchor="middle" fill="#2a5a38" font-size="9">Лайм-Аква</text>
+      <rect x="290" y="90" width="120" height="45" rx="4" fill="#9fc8b0" stroke="#7aaa88" stroke-width="1"/>
+      <text x="350" y="118" text-anchor="middle" fill="#2a5a38" font-size="9">Бора-Бора</text>
+      <rect x="30" y="200" width="340" height="18" rx="3" fill="#e8ddc0" stroke="#c8b880" stroke-width="0.5"/>
+      <text x="200" y="213" text-anchor="middle" fill="#7a6820" font-size="8">Летняя веранда</text>
+      <rect x="100" y="310" width="280" height="100" rx="4" fill="#d0e8f0" stroke="#90c0d8" stroke-width="1" opacity="0.7"/>
+      <text x="240" y="360" text-anchor="middle" fill="#1a5a78" font-size="10">Бассейн (52м)</text>
+      <rect x="380" y="250" width="60" height="140" rx="3" fill="#e8c070" stroke="#c09030" stroke-width="1"/>
+      <text x="410" y="325" text-anchor="middle" fill="#6a4010" font-size="9">Водная</text>
+      <text x="410" y="337" text-anchor="middle" fill="#6a4010" font-size="9">горка</text>
+      <rect x="30" y="240" width="28" height="28" rx="4" fill="#c8a880"/>
+      <rect x="30" y="278" width="28" height="28" rx="4" fill="#c8a880"/>
+      <text x="44" y="258" text-anchor="middle" fill="#5a3a10" font-size="7">сауна</text>
+      <text x="44" y="296" text-anchor="middle" fill="#5a3a10" font-size="7">сауна</text>
+    </svg>
+
+    <div class="map-title">Роял-Ленд · интерактивная карта</div>
+
+    <div class="obj" style="left:12%;top:42%;width:38px;height:28px;background:#d4a844;" data-id="sauna1" onclick="select(this)">
+      <span style="font-size:14px;">🛁</span>
+      <span class="obj-label">Сауна №1</span>
+    </div>
+    <div class="obj" style="left:22%;top:42%;width:38px;height:28px;background:#d4a844;" data-id="sauna2" onclick="select(this)">
+      <span style="font-size:14px;">🛁</span>
+      <span class="obj-label">Сауна №2</span>
+    </div>
+    <div class="obj" style="left:18%;top:27%;width:44px;height:34px;background:#5fa878;" data-id="aqua" onclick="select(this)">
+      <span style="font-size:16px;">🏊</span>
+      <span class="obj-label">Лайм-Аква</span>
+    </div>
+    <div class="obj" style="left:54%;top:18%;width:40px;height:32px;background:#c84848;" data-id="bora" onclick="select(this)">
+      <span style="font-size:14px;">🌴</span>
+      <span class="obj-label">Бора-Бора</span>
+    </div>
+    <div class="obj" style="left:35%;top:55%;width:36px;height:28px;background:#4a8ac8;" data-id="pool" onclick="select(this)">
+      <span style="font-size:14px;">🌊</span>
+      <span class="obj-label">Бассейн</span>
+    </div>
+    <div class="obj" style="left:28%;top:68%;width:36px;height:28px;background:#7a9a58;" data-id="dom1" onclick="select(this)">
+      <span style="font-size:13px;">🏠</span>
+      <span class="obj-label">Домик №11</span>
+    </div>
+    <div class="obj" style="left:40%;top:72%;width:36px;height:28px;background:#7a9a58;" data-id="dom2" onclick="select(this)">
+      <span style="font-size:13px;">🏠</span>
+      <span class="obj-label">Домик №12</span>
+    </div>
+    <div class="obj" style="left:48%;top:66%;width:36px;height:28px;background:#9a7a48;" data-id="besedka" onclick="select(this)">
+      <span style="font-size:13px;">⛺</span>
+      <span class="obj-label">Беседка №5</span>
+    </div>
+    <div class="obj" style="left:13%;top:62%;width:36px;height:28px;background:#9a7a48;" data-id="panorama" onclick="select(this)">
+      <span style="font-size:13px;">🏡</span>
+      <span class="obj-label">Панорама</span>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#5fa878"></div> Бассейны и аквазоны</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7a9a58"></div> Домики</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#d4a844"></div> Сауны и бани</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9a7a48"></div> Беседки и павильоны</div>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="side-top">
+      <h2>Royal-Land</h2>
+      <p>Выберите объект на карте, чтобы увидеть подробности и забронировать</p>
+    </div>
+    <div class="side-body" id="side-body">
+      <div class="hint">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0z"/></svg>
+        Нажмите на любой объект на карте
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var data = {
+  sauna1: { name: 'Финская сауна №1', tag: 'available', desc: 'Финская парная на 8 чел. Бассейн с гидромассажем, зона отдыха, мини-кухня.', price: '2 500 ₽/час', amenities: ['Парная', 'Бассейн 5×3м', 'Зона отдыха', 'Полотенца'] },
+  sauna2: { name: 'Хамам №2', tag: 'available', desc: '2-этажный турецкий хаммам, бассейн с гейзером, бильярд на 2 этаже.', price: '3 500 ₽/час', amenities: ['Турецкий хамам', 'Бассейн 24м²', 'Бильярд', 'Кухня'] },
+  aqua: { name: 'Лайм-Аква', tag: 'busy', desc: 'Крупный аква-комплекс для компании до 20 человек. Зона BBQ, хамам, финская парная.', price: '5 000 ₽/час', amenities: ['Хамам + парная', 'Бассейн', 'Зона BBQ', 'До 20 чел.'] },
+  bora: { name: 'Бора-Бора', tag: 'available', desc: 'Уютный коттедж с бассейном и видом на территорию. Подходит для компании 6–10 чел.', price: '4 200 ₽/час', amenities: ['Приватный бассейн', 'Мангал', 'До 10 чел.', 'Wi-Fi'] },
+  pool: { name: 'Открытый бассейн 52м', tag: 'available', desc: 'Сезонный открытый бассейн с подогревом воды. Длина 52 м, шезлонги, зонтики.', price: '500 ₽/чел.', amenities: ['Длина 52м', 'Шезлонги', 'Водная горка', 'Работает с мая'] },
+  dom1: { name: 'Домик №11', tag: 'available', desc: 'Тёплый шашлычный домик с тепловой завесой, телевизором и холодильником. На 6 чел.', price: '1 800 ₽/день', amenities: ['Кондиционер', 'Телевизор', 'Холодильник', 'Мангал'] },
+  dom2: { name: 'Домик №12', tag: 'busy', desc: 'Домик у бассейна. Уже занят на сегодня — можно забронировать на завтра.', price: '1 800 ₽/день', amenities: ['Кондиционер', 'Телевизор', 'Холодильник', 'Вид на бассейн'] },
+  besedka: { name: 'Беседка №5', tag: 'available', desc: 'Летняя просторная беседка на 12 чел. с мангальной зоной и столом.', price: '800 ₽/день', amenities: ['Мангал', 'До 12 чел.', 'Открытая', 'Бесплатный Wi-Fi'] },
+  panorama: { name: 'Апартаменты Панорама', tag: 'available', desc: '2-комнатные апартаменты с завтраком и панорамным видом на природу. До 4 гостей.', price: 'от 6 500 ₽/ночь', amenities: ['2 комнаты', 'Завтрак', 'Smart TV', 'Мангальная зона'] }
+};
+
+function select(el) {
+  document.querySelectorAll('.obj').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  var id = el.getAttribute('data-id');
+  var d = data[id];
+  var tagClass = d.tag === 'available' ? 'tag-available' : 'tag-busy';
+  var tagText = d.tag === 'available' ? 'Свободно' : 'Занято';
+  var amenitiesHtml = d.amenities.map(a => '<div class="amenity"><div class="amenity-dot"></div>' + a + '</div>').join('');
+  document.getElementById('side-body').innerHTML = '<div class="obj-card"><h3>' + d.name + '</h3><span class="tag ' + tagClass + '">' + tagText + '</span><p class="desc">' + d.desc + '</p><div style="margin-bottom:10px">' + amenitiesHtml + '</div><div class="price">' + d.price + ' <span>· забронировать</span></div><button class="book-btn" onclick="sendPrompt(\'Хочу забронировать ' + d.name + ', помоги с выбором дат\')">Выбрать дату и время ↗</button></div>';
+}
+</script>
