@@ -976,7 +976,6 @@
 
   </div>
 </section>
-
 <!-- CTA -->
 <section class="cta-section" id="contact">
   <div class="cta-inner">
@@ -1046,12 +1045,12 @@
       button.disabled = true;
       
       // Данные для отправки
-     const payload = {
+      const payload = {
         name: name,
         phone: phone,
         page: window.location.href,
         timestamp: new Date().toISOString(),
-        "x-secret": "parkflow_secret_2025" // Теперь ключ внутри тела запроса
+        "x-secret": SECRET_KEY
       };
       
       console.log('📤 Отправляю данные:', payload);
@@ -1061,8 +1060,8 @@
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'x-secret': SECRET_KEY
+            'Content-Type': 'application/json'
+            // ❌ УБРАЛ x-secret из заголовков
           },
           body: JSON.stringify(payload)
         });
@@ -1082,7 +1081,6 @@
       } catch (error) {
         console.error('🔥 Ошибка сети / CORS:', error);
         
-        // Подробная диагностика
         let errorMsg = '❌ Ошибка соединения. ';
         if (error.message.includes('Failed to fetch')) {
           errorMsg += 'Возможно, проблема с CORS или сервер недоступен.';
@@ -1113,31 +1111,3 @@
     <a href="tel:+74951234567">+7 (978) 124-84-90</a>
   </div>
 </footer>
-
-<script>
-  // Scroll reveal
-  const reveals = document.querySelectorAll('.reveal');
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
-  }, { threshold: 0.1 });
-  reveals.forEach(el => io.observe(el));
-
-  // Boom barrier animation: close → open in sync with car
-  const boomL = document.getElementById('boomLeft');
-  const boomR = document.getElementById('boomRight');
-
-  function cycleBoom() {
-    // Close
-    boomL.classList.add('closed-left');
-    boomR.classList.add('closed-right');
-    setTimeout(() => {
-      // Open (car passes)
-      boomL.classList.remove('closed-left');
-      boomR.classList.remove('closed-right');
-    }, 3300); // matches car approaching at ~47% of 7s
-    setTimeout(cycleBoom, 7000);
-  }
-  cycleBoom();
-</script>
-</body>
-</html>
