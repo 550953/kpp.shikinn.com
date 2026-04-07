@@ -1046,13 +1046,13 @@
       button.disabled = true;
       
       // Данные для отправки
-      const payload = {
-  name: name,
-  phone: phone,
-  page: window.location.href,
-  timestamp: new Date().toISOString(),
-  "x-secret": SECRET_KEY // Добавили ключ внутрь тела запроса
-};
+     const payload = {
+        name: name,
+        phone: phone,
+        page: window.location.href,
+        timestamp: new Date().toISOString(),
+        "x-secret": "parkflow_secret_2025" // Теперь ключ внутри тела запроса
+      };
       
       console.log('📤 Отправляю данные:', payload);
       console.log('🌐 URL:', WEBHOOK_URL);
