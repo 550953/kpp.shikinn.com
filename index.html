@@ -997,63 +997,109 @@
 </section>
 
 <script>
-  
-  
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => io.observe(el));
+
+  // Boom barrier animation
+  const boomL = document.getElementById('boomLeft');
+  const boomR = document.getElementById('boomRight');
+
+  function cycleBoom() {
+    boomL.classList.add('closed-left');
+    boomR.classList.add('closed-right');
+    setTimeout(() => {
+      boomL.classList.remove('closed-left');
+      boomR.classList.remove('closed-right');
+    }, 3300);
+    setTimeout(cycleBoom, 7000);
+  }
+  cycleBoom();
+
+  // ========== ФОРМА ОТПРАВКИ В N8N ==========
   const WEBHOOK_URL = 'https://n8n.shikinn.com/webhook/parkflow.shikinn.com';
   const SECRET_KEY = 'parkflow_secret_2025';
   
   const form = document.getElementById('parkingForm');
   
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const name = document.getElementById('userName').value.trim();
-    const phone = document.getElementById('userPhone').value.trim();
-    
-    if (!name || !phone) {
-      alert('Заполните имя и телефон');
-      return;
-    }
-    
-    const button = form.querySelector('button');
-    const originalText = button.textContent;
-    button.textContent = 'Отправка...';
-    button.disabled = true;
-    
-    try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-secret': SECRET_KEY
-        },
-        body: JSON.stringify({
-          name: name,
-          phone: phone,
-          page: window.location.href,
-          timestamp: new Date().toISOString()
-        })
-      });
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
       
-      const responseText = await response.text();
-      console.log('Response status:', response.status);
-      console.log('Response body:', responseText);
+      const nameInput = document.getElementById('userName');
+      const phoneInput = document.getElementById('userPhone');
       
-      if (response.ok) {
-        alert('✅ Заявка отправлена! Мы свяжемся с вами.');
-        form.reset();
-      } else {
-        alert(`❌ Ошибка ${response.status}: ${responseText}`);
+      const name = nameInput.value.trim();
+      const phone = phoneInput.value.trim();
+      
+      if (!name || !phone) {
+        alert('❌ Заполните имя и телефон');
+        return;
       }
-    } catch (error) {
-      console.error('Fetch error:', error);
-      alert('❌ Ошибка соединения. Проверьте консоль.');
-    } finally {
-      button.textContent = originalText;
-      button.disabled = false;
-    }
-  });
-</script>
+      
+      const button = form.querySelector('button');
+      const originalText = button.textContent;
+      button.textContent = 'Отправка...';
+      button.disabled = true;
+      
+      // Данные для отправки
+      const payload = {
+        name: name,
+        phone: phone,
+        page: window.location.href,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('📤 Отправляю данные:', payload);
+      console.log('🌐 URL:', WEBHOOK_URL);
+      
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-secret': SECRET_KEY
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        console.log('📨 Статус ответа:', response.status);
+        
+        const responseText = await response.text();
+        console.log('📄 Тело ответа:', responseText);
+        
+        if (response.ok) {
+          alert('✅ Заявка отправлена! Мы свяжемся с вами в ближайшее время.');
+          form.reset();
+        } else {
+          console.error('❌ Ошибка сервера:', response.status, responseText);
+          alert(`❌ Ошибка ${response.status}: ${responseText || 'Неизвестная ошибка'}`);
+        }
+      } catch (error) {
+        console.error('🔥 Ошибка сети / CORS:', error);
+        
+        // Подробная диагностика
+        let errorMsg = '❌ Ошибка соединения. ';
+        if (error.message.includes('Failed to fetch')) {
+          errorMsg += 'Возможно, проблема с CORS или сервер недоступен.';
+        } else if (error.message.includes('NetworkError')) {
+          errorMsg += 'Проверьте интернет-соединение.';
+        } else {
+          errorMsg += error.message;
+        }
+        
+        alert(errorMsg + '\n\nОткройте консоль (F12) для деталей.');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    });
+  } else {
+    console.error('❌ Форма #parkingForm не найдена в DOM!');
+  }
 </script>
 
 <!-- FOOTER -->
