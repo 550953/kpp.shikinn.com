@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ParkFlow — Умная система управления парковкой</title>
+<meta name="description" content="ParkFlow — облачная система автоматизации парковки с распознаванием номеров. Без шлагбаумов, без касс, без очередей." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #12151c;
+    --surface2: #1a1e28;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --border: rgba(255,255,255,0.07);
+    --glow: 0 0 40px rgba(0,229,255,0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 48px;
+    background: rgba(10,12,16,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none; font-size: 14px;
+    font-weight: 600; letter-spacing: 0.5px; transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent); color: #000;
+    border: none; padding: 10px 24px; border-radius: 6px;
+    font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 13px;
+    cursor: pointer; text-decoration: none; letter-spacing: 0.5px;
+    transition: opacity .2s;
+  }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative; min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 0 80px;
+    overflow: hidden;
+  }
+
+  /* Road scene */
+  .road-scene {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 65vh; overflow: hidden;
+  }
+  .road-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+      #060810 0%,
+      #0d1420 40%,
+      #111825 70%,
+      #0a0c10 100%
+    );
+  }
+  /* Night sky stars */
+  .stars {
+    position: absolute; top: 0; left: 0; right: 0; height: 55%;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 45% 10%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 8%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 88% 20%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 45%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 35%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 80% 42%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 92% 48%, rgba(255,255,255,0.5) 0%, transparent 100%);
+  }
+  /* Road surface */
+  .road {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 38%;
+    background: linear-gradient(180deg, #1a1f2e 0%, #131720 100%);
+    perspective: 400px;
+  }
+  .road::before {
+    content: '';
+    position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 75%;
+    background: repeating-linear-gradient(
+      180deg,
+      #f5c518 0, #f5c518 30px, transparent 30px, transparent 60px
+    );
+    animation: dashMove 0.4s linear infinite;
+    opacity: 0.7;
+  }
+  /* Road edge lines */
+  .road::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      linear-gradient(180deg, transparent 14%, rgba(255,255,255,0.15) 14%, rgba(255,255,255,0.15) 16%, transparent 16%),
+      linear-gradient(90deg, transparent 15%, rgba(255,255,255,0.06) 15.5%, transparent 16%),
+      linear-gradient(90deg, transparent 84%, rgba(255,255,255,0.06) 84.5%, transparent 85%);
+  }
+  @keyframes dashMove {
+    to { background-position: 0 60px; }
+  }
+
+  /* Gate / boom barrier */
+  .gate {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 320px; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  }
+  .gate-post {
+    position: absolute; bottom: 0;
+    width: 16px; height: 55%;
+    background: linear-gradient(90deg, #2a3040 0%, #3a4255 50%, #2a3040 100%);
+    border-radius: 4px 4px 0 0;
+  }
+  .gate-post.left { left: 20px; }
+  .gate-post.right { right: 20px; }
+  .gate-box {
+    position: absolute; bottom: 55%;
+    width: 44px; height: 36px;
+    background: linear-gradient(135deg, #1e2430 0%, #2a3245 100%);
+    border: 1px solid rgba(0,229,255,0.3);
+    border-radius: 6px;
+    box-shadow: 0 0 20px rgba(0,229,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gate-box.left { left: 0; }
+  .gate-box.right { right: 0; }
+  .gate-led {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: ledPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes ledPulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+  /* Boom arm */
+  .boom {
+    position: absolute;
+    height: 8px; width: 140px;
+    background: linear-gradient(90deg, #ff6b35 0%, #ff6b35 30%, #f5f5f5 30%, #f5f5f5 60%, #ff6b35 60%, #ff6b35 100%);
+    border-radius: 4px;
+    transform-origin: left center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .boom.left {
+    bottom: calc(55% + 18px);
+    left: 28px;
+    transform: rotate(-90deg); /* open = up */
+  }
+  .boom.right {
+    bottom: calc(55% + 18px);
+    right: 28px;
+    transform: rotate(90deg); /* open = up */
+    transform-origin: right center;
+  }
+  .boom.closed-left { transform: rotate(0deg); }
+  .boom.closed-right { transform: rotate(0deg); }
+
+  /* Camera on post */
+  .camera {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    width: 20px; height: 14px;
+    background: #1e2430;
+    border-radius: 3px;
+    border: 1px solid rgba(0,229,255,0.4);
+    box-shadow: 0 0 10px rgba(0,229,255,0.3);
+  }
+  .camera::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  /* Cars */
+  .cars-lane {
+    position: absolute; bottom: 12%; left: 0; right: 0;
+    height: 60px;
+    pointer-events: none;
+  }
+  .car {
+    position: absolute; bottom: 0;
+    display: flex; flex-direction: column; align-items: center;
+    animation: carDrive linear infinite;
+  }
+  .car-body {
+    position: relative;
+    width: 72px; height: 28px;
+    border-radius: 8px 8px 4px 4px;
+  }
+  .car-top {
+    position: absolute; top: -18px; left: 12px;
+    width: 48px; height: 20px;
+    border-radius: 8px 8px 0 0;
+    opacity: 0.95;
+  }
+  .car-wheel {
+    position: absolute; bottom: -6px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    border: 2px solid #555;
+  }
+  .car-wheel.fl { left: 8px; }
+  .car-wheel.rl { right: 8px; }
+  .car-headlight {
+    position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .car-taillight {
+    position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #ff3333;
+    box-shadow: 0 0 8px #ff0000;
+  }
+  /* Light beam */
+  .car-beam {
+    position: absolute; right: -50px; top: 50%; transform: translateY(-50%);
+    width: 50px; height: 14px;
+    background: linear-gradient(90deg, rgba(255,240,180,0.35) 0%, transparent 100%);
+    clip-path: polygon(0 20%, 100% 0%, 100% 100%, 0 80%);
+  }
+
+  .car1 {
+    bottom: 6px;
+    animation-name: carDrive;
+    animation-duration: 7s;
+    animation-delay: 0s;
+  }
+  .car2 {
+    bottom: 6px;
+    animation-name: carDrive;
+    animation-duration: 9s;
+    animation-delay: -3.5s;
+  }
+  .car3 {
+    bottom: 6px;
+    animation-name: carDrive;
+    animation-duration: 11s;
+    animation-delay: -6s;
+  }
+  .car1 .car-body { background: linear-gradient(135deg, #2355a0 0%, #1a3f7a 100%); }
+  .car1 .car-top  { background: linear-gradient(135deg, #1e4898 0%, #152e6e 100%); }
+  .car1 .car-headlight { background: #ffe97a; box-shadow: 0 0 12px rgba(255,233,122,0.9); }
+  .car2 .car-body { background: linear-gradient(135deg, #7a2020 0%, #5c1717 100%); }
+  .car2 .car-top  { background: linear-gradient(135deg, #6e1c1c 0%, #4a1212 100%); }
+  .car2 .car-headlight { background: #ffe97a; box-shadow: 0 0 12px rgba(255,233,122,0.9); }
+  .car3 .car-body { background: linear-gradient(135deg, #1a4a30 0%, #133823 100%); }
+  .car3 .car-top  { background: linear-gradient(135deg, #174228 0%, #0f2e1a 100%); }
+  .car3 .car-headlight { background: #ffe97a; box-shadow: 0 0 12px rgba(255,233,122,0.9); }
+
+  @keyframes carDrive {
+    0%   { left: -100px; }
+    45%  { left: calc(50% - 200px); } /* approaching gate */
+    52%  { left: calc(50% - 170px); } /* wait briefly */
+    55%  { left: calc(50% - 170px); } /* gate opening */
+    100% { left: calc(100% + 100px); }
+  }
+
+  /* Scan beam that fires when car approaches */
+  .scan-effect {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 260px; height: 100%;
+    pointer-events: none;
+    animation: scanPulse 7s linear infinite;
+    opacity: 0;
+  }
+  .scan-effect::before {
+    content: '';
+    position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+    width: 180px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow: 0 0 20px var(--accent), 0 0 40px rgba(0,229,255,0.4);
+  }
+  @keyframes scanPulse {
+    0%,44%,58%,100% { opacity: 0; }
+    47%,55% { opacity: 1; }
+  }
+
+  /* Plate recognition readout */
+  .plate-readout {
+    position: absolute;
+    bottom: 45%; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.4);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: 'Manrope', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 3px;
+    white-space: nowrap;
+    box-shadow: 0 0 20px rgba(0,229,255,0.2);
+    animation: plateAppear 7s linear infinite;
+    opacity: 0;
+  }
+  @keyframes plateAppear {
+    0%,44%,62%,100% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+    47%,59% { opacity: 1; transform: translateX(-50%) scale(1); }
+  }
+
+  /* Horizon glow */
+  .horizon-glow {
+    position: absolute; bottom: 36%; left: 50%; transform: translateX(-50%);
+    width: 60%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.2), rgba(255,107,53,0.15), transparent);
+    box-shadow: 0 0 30px rgba(0,229,255,0.15);
+  }
+
+  /* Hero text */
+  .hero-content {
+    position: relative; z-index: 10;
+    padding: 0 48px;
+    max-width: 820px;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.25);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--accent); text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero-tag::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+    animation: ledPulse 1.5s ease-in-out infinite;
+  }
+  .hero-h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 7vw, 96px);
+    line-height: 0.95;
+    letter-spacing: 1px;
+    color: var(--text);
+    margin-bottom: 24px;
+  }
+  .hero-h1 em { color: var(--accent); font-style: normal; }
+  .hero-sub {
+    font-size: 17px; color: var(--muted); max-width: 520px;
+    line-height: 1.7; margin-bottom: 36px;
+  }
+  .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent); color: #000;
+    border: none; padding: 14px 32px; border-radius: 8px;
+    font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 14px;
+    cursor: pointer; text-decoration: none; letter-spacing: 0.5px;
+    transition: transform .15s, opacity .15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-ghost {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); padding: 14px 32px; border-radius: 8px;
+    font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 14px;
+    cursor: pointer; text-decoration: none; letter-spacing: 0.5px;
+    transition: border-color .2s, color .2s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
+
+  /* Stats bar */
+  .stats-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 48px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  }
+  .stat-item {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 24px; border-right: 1px solid var(--border);
+    text-align: center;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px; line-height: 1;
+    color: var(--accent); letter-spacing: 1px;
+  }
+  .stat-label {
+    font-size: 12px; color: var(--muted);
+    font-weight: 600; letter-spacing: 0.5px;
+    margin-top: 4px; text-transform: uppercase;
+  }
+
+  /* Section */
+  section { padding: 100px 48px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 4vw, 56px);
+    line-height: 1.05; letter-spacing: 0.5px;
+    color: var(--text); margin-bottom: 16px;
+  }
+  .section-sub {
+    font-size: 16px; color: var(--muted); max-width: 540px; line-height: 1.7;
+  }
+
+  /* How it works */
+  .how { background: var(--bg); }
+  .steps {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
+    margin-top: 64px;
+    background: var(--border);
+    border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .step {
+    background: var(--surface);
+    padding: 40px 32px;
+    position: relative;
+    transition: background .2s;
+  }
+  .step:hover { background: var(--surface2); }
+  .step-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px; line-height: 1;
+    color: rgba(0,229,255,0.12);
+    position: absolute; top: 20px; right: 24px;
+    letter-spacing: 1px;
+  }
+  .step-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 20px;
+  }
+  .step h3 {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    margin-bottom: 10px; line-height: 1.3;
+  }
+  .step p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Features */
+  .features { background: var(--surface); }
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 64px;
+  }
+  .feature-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 16px; padding: 36px 32px;
+    transition: border-color .2s, transform .2s;
+    position: relative; overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0; transition: opacity .3s;
+  }
+  .feature-card:hover { border-color: rgba(0,229,255,0.2); transform: translateY(-4px); }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    font-size: 32px; margin-bottom: 20px;
+    display: block;
+  }
+  .feature-card h3 {
+    font-size: 17px; font-weight: 800; margin-bottom: 10px; color: var(--text);
+  }
+  .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+  /* Pricing */
+  .pricing { background: var(--bg); }
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 64px; align-items: start;
+  }
+  .plan {
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 40px 32px; position: relative; overflow: hidden;
+    transition: transform .2s;
+  }
+  .plan:hover { transform: translateY(-4px); }
+  .plan.featured {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, transparent 100%);
+    box-shadow: 0 0 40px rgba(0,229,255,0.1);
+  }
+  .plan-badge {
+    position: absolute; top: 20px; right: 20px;
+    background: var(--accent); color: #000;
+    font-size: 10px; font-weight: 800; letter-spacing: 1px;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 20px;
+  }
+  .plan-name {
+    font-size: 12px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+  }
+  .plan-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px; line-height: 1; color: var(--text);
+    margin-bottom: 4px;
+  }
+  .plan-price span { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; }
+  .plan-period { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .plan-divider {
+    height: 1px; background: var(--border); margin-bottom: 28px;
+  }
+  .plan-features { list-style: none; margin-bottom: 32px; }
+  .plan-features li {
+    font-size: 14px; color: var(--text);
+    padding: 7px 0; display: flex; align-items: center; gap: 10px;
+  }
+  .plan-features li::before {
+    content: '✓'; color: var(--accent); font-weight: 800;
+    flex-shrink: 0;
+  }
+  .plan-features li.no { color: var(--muted); }
+  .plan-features li.no::before { content: '–'; color: var(--muted); }
+  .plan-btn {
+    width: 100%; padding: 14px; border-radius: 10px;
+    font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 14px;
+    cursor: pointer; text-align: center; transition: all .2s;
+    text-decoration: none; display: block;
+    letter-spacing: 0.5px;
+  }
+  .plan-btn.primary { background: var(--accent); color: #000; border: none; }
+  .plan-btn.primary:hover { opacity: 0.88; }
+  .plan-btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .plan-btn.ghost:hover { border-color: rgba(255,255,255,0.25); }
+
+  /* CTA section */
+  .cta-section {
+    background: var(--surface);
+    text-align: center;
+  }
+  .cta-inner {
+    max-width: 640px; margin: 0 auto;
+  }
+  .cta-inner .section-title { margin-bottom: 16px; }
+  .cta-inner .section-sub { margin: 0 auto 40px; }
+  .cta-form {
+    display: flex; gap: 12px; max-width: 480px; margin: 0 auto;
+  }
+  .cta-form input {
+    flex: 1; padding: 14px 18px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: 'Manrope', sans-serif; font-size: 14px;
+    outline: none; transition: border-color .2s;
+  }
+  .cta-form input:focus { border-color: var(--accent); }
+  .cta-form input::placeholder { color: var(--muted); }
+  .cta-form button {
+    background: var(--accent); color: #000;
+    border: none; padding: 14px 24px; border-radius: 8px;
+    font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 14px;
+    cursor: pointer; white-space: nowrap; transition: opacity .2s;
+  }
+  .cta-form button:hover { opacity: 0.88; }
+
+  /* Footer */
+  footer {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 40px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 20px;
+  }
+  footer .logo { font-size: 22px; }
+  footer p { font-size: 13px; color: var(--muted); }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color .2s; }
+  .footer-links a:hover { color: var(--text); }
+
+  /* Scroll fade in */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    .hero-content { padding: 0 20px; }
+    section { padding: 60px 20px; }
+    .stats-bar { grid-template-columns: repeat(2,1fr); padding: 24px 20px; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .cta-form { flex-direction: column; }
+    footer { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Park<span>Flow</span></div>
+  <div class="nav-links">
+    <a href="#how">Как работает</a>
+    <a href="#features">Возможности</a>
+    <a href="#pricing">Тарифы</a>
+    <a href="#contact">Контакты</a>
+  </div>
+  <a href="#contact" class="nav-cta">Получить демо</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero" style="padding-top:80px;">
+
+  <!-- Road scene with cars -->
+  <div class="road-scene">
+    <div class="road-bg"></div>
+    <div class="stars"></div>
+
+    <!-- Horizon glow -->
+    <div class="horizon-glow"></div>
+
+    <!-- Road -->
+    <div class="road"></div>
+
+    <!-- Gate structure -->
+    <div class="gate">
+      <!-- Left post -->
+      <div class="gate-post left">
+        <div class="gate-box left" style="position:absolute;top:-36px;left:-14px;">
+          <div class="gate-led"></div>
+        </div>
+        <div class="camera" style="position:absolute;top:-52px;left:50%;transform:translateX(-50%);"></div>
+      </div>
+      <!-- Right post -->
+      <div class="gate-post right">
+        <div class="gate-box right" style="position:absolute;top:-36px;right:-14px;">
+          <div class="gate-led"></div>
+        </div>
+      </div>
+      <!-- Boom arms (animated open) -->
+      <div class="boom left" id="boomLeft"></div>
+      <div class="boom right" id="boomRight"></div>
+    </div>
+
+    <!-- Scan effect -->
+    <div class="scan-effect"></div>
+
+    <!-- Plate readout -->
+    <div class="plate-readout">А 347 КМ • 77</div>
+
+    <!-- Cars -->
+    <div class="cars-lane">
+      <div class="car car1">
+        <div class="car-body">
+          <div class="car-top"></div>
+          <div class="car-wheel fl"></div>
+          <div class="car-wheel rl"></div>
+          <div class="car-headlight"></div>
+          <div class="car-taillight"></div>
+          <div class="car-beam"></div>
+        </div>
+      </div>
+      <div class="car car2">
+        <div class="car-body">
+          <div class="car-top"></div>
+          <div class="car-wheel fl"></div>
+          <div class="car-wheel rl"></div>
+          <div class="car-headlight"></div>
+          <div class="car-taillight"></div>
+          <div class="car-beam"></div>
+        </div>
+      </div>
+      <div class="car car3">
+        <div class="car-body">
+          <div class="car-top"></div>
+          <div class="car-wheel fl"></div>
+          <div class="car-wheel rl"></div>
+          <div class="car-headlight"></div>
+          <div class="car-taillight"></div>
+          <div class="car-beam"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero text -->
+  <div class="hero-content">
+    <div class="hero-tag">Умная автоматизация парковок</div>
+    <h1 class="hero-h1">
+      Въезд<br>без<br><em>остановки</em>
+    </h1>
+    <p class="hero-sub">
+      Облачная платформа для управления платной парковкой. Камера читает номер — шлагбаум открывается. Никаких касс, талонов и очередей.
+    </p>
+    <div class="hero-buttons">
+      <a href="#contact" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Запустить проект
+      </a>
+      <a href="#how" class="btn-ghost">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        Смотреть видео
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-item reveal">
+    <div class="stat-num">0,3с</div>
+    <div class="stat-label">Время распознавания</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">99,4%</div>
+    <div class="stat-label">Точность считывания</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">−70%</div>
+    <div class="stat-label">Затраты на персонал</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">24/7</div>
+    <div class="stat-label">Мониторинг онлайн</div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="section-label">Принцип работы</div>
+  <h2 class="section-title">4 шага до умной парковки</h2>
+  <p class="section-sub">Полный цикл — от установки камер до аналитики выручки в одном личном кабинете.</p>
+
+  <div class="steps reveal">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">📷</div>
+      <h3>Камера считывает номер</h3>
+      <p>IP-камера на въезде фиксирует госномер в момент подъезда автомобиля. Работает ночью и в любую погоду.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">☁️</div>
+      <h3>Облако обрабатывает данные</h3>
+      <p>Сервер распознаёт номер за 0,3 секунды, проверяет базу и рассчитывает тариф автоматически.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">🚗</div>
+      <h3>Шлагбаум открывается</h3>
+      <p>Команда на открытие приходит без участия оператора. Автомобиль проезжает без остановки.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-icon">💳</div>
+      <h3>Оплата онлайн</h3>
+      <p>Водитель оплачивает через приложение, QR-код или по ссылке в SMS. Наличных нет — потерь нет.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-label">Возможности платформы</div>
+  <h2 class="section-title">Всё включено из коробки</h2>
+  <p class="section-sub">Не нужно собирать систему из разных вендоров. ParkFlow — единая экосистема.</p>
+
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <span class="feature-icon">🔍</span>
+      <h3>Распознавание номеров</h3>
+      <p>Собственный алгоритм распознавания работает с российскими, казахстанскими и белорусскими номерами. Точность 99,4% при угле обзора до 30°.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">📊</span>
+      <h3>Аналитика в реальном времени</h3>
+      <p>Загруженность, выручка, средний чек и оборачиваемость мест — в одном дашборде. Доступен с телефона.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">⏱️</span>
+      <h3>Гибкие тарифы</h3>
+      <p>Поминутный, почасовой, дневной, ночной, абонементный тарифы. Спецусловия для постоянных клиентов.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🔗</span>
+      <h3>Интеграция с BI и 1С</h3>
+      <p>Выгрузка отчётов в Excel, подключение к 1С Бухгалтерия, REST API для интеграции с вашими системами.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🛡️</span>
+      <h3>Безопасность и резервирование</h3>
+      <p>Резервная запись на карту памяти при обрыве связи. Работа в автономном режиме без потери данных.</p>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">🏢</span>
+      <h3>Мультиобъектность</h3>
+      <p>Управляйте несколькими парковками из одного кабинета. Единый счёт, сводная аналитика по всей сети.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-label">Тарифы</div>
+  <h2 class="section-title">Прозрачная стоимость</h2>
+  <p class="section-sub">Без скрытых платежей. Оборудование в аренду или выкуп — выбираете сами.</p>
+
+  <div class="pricing-grid">
+
+    <!-- Старт -->
+    <div class="plan reveal">
+      <div class="plan-name">Старт</div>
+      <div class="plan-price">4 900<span> ₽</span></div>
+      <div class="plan-period">в месяц · до 1 въезда/выезда</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>1 камера распознавания</li>
+        <li>Облачный личный кабинет</li>
+        <li>Базовая аналитика</li>
+        <li>Онлайн-оплата через QR</li>
+        <li>Техподдержка 5×8</li>
+        <li class="no">API и интеграции</li>
+        <li class="no">Мультиобъектность</li>
+        <li class="no">Брендированное приложение</li>
+      </ul>
+      <a href="#contact" class="plan-btn ghost">Попробовать</a>
+    </div>
+
+    <!-- Бизнес -->
+    <div class="plan featured reveal">
+      <div class="plan-badge">Популярный</div>
+      <div class="plan-name">Бизнес</div>
+      <div class="plan-price">11 900<span> ₽</span></div>
+      <div class="plan-period">в месяц · до 4 въездов/выездов</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>До 4 камер распознавания</li>
+        <li>Облачный личный кабинет</li>
+        <li>Расширенная аналитика</li>
+        <li>Онлайн-оплата (QR + приложение)</li>
+        <li>Техподдержка 7×24</li>
+        <li>REST API и интеграции</li>
+        <li>До 3 объектов</li>
+        <li class="no">Брендированное приложение</li>
+      </ul>
+      <a href="#contact" class="plan-btn primary">Подключить</a>
+    </div>
+
+    <!-- Про -->
+    <div class="plan reveal">
+      <div class="plan-name">Про / Сеть</div>
+      <div class="plan-price">—</div>
+      <div class="plan-period">индивидуально · от 5 объектов</div>
+      <div class="plan-divider"></div>
+      <ul class="plan-features">
+        <li>Неограниченно камер</li>
+        <li>White-label кабинет</li>
+        <li>Продвинутая аналитика + BI</li>
+        <li>Интеграция с 1С, ERP</li>
+        <li>Выделенный менеджер</li>
+        <li>API + вебхуки</li>
+        <li>Неограниченно объектов</li>
+        <li>Брендированное приложение</li>
+      </ul>
+      <a href="#contact" class="plan-btn ghost">Обсудить проект</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="contact">
+  <div class="cta-inner">
+    <div class="section-label">Начать прямо сейчас</div>
+    <h2 class="section-title reveal">Запустим парковку за 5 рабочих дней</h2>
+    <p class="section-sub reveal">Оставьте номер — позвоним, разберём ваш объект и подготовим расчёт бесплатно.</p>
+    <div class="cta-form reveal">
+      <input type="tel" placeholder="+7 (___) ___-__-__" />
+      <button type="button">Перезвоните мне</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:14px;">
+      Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности
+    </p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">Park<span>Flow</span></div>
+  <p style="font-size:13px;color:var(--muted);">© 2025 ParkFlow. Умные парковки для бизнеса.</p>
+  <div class="footer-links">
+    <a href="#">Политика конфиденциальности</a>
+    <a href="#">Оферта</a>
+    <a href="tel:+74951234567">+7 (978) 124-84-90</a>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => io.observe(el));
+
+  // Boom barrier animation: close → open in sync with car
+  const boomL = document.getElementById('boomLeft');
+  const boomR = document.getElementById('boomRight');
+
+  function cycleBoom() {
+    // Close
+    boomL.classList.add('closed-left');
+    boomR.classList.add('closed-right');
+    setTimeout(() => {
+      // Open (car passes)
+      boomL.classList.remove('closed-left');
+      boomR.classList.remove('closed-right');
+    }, 3300); // matches car approaching at ~47% of 7s
+    setTimeout(cycleBoom, 7000);
+  }
+  cycleBoom();
+</script>
+</body>
+</html>
